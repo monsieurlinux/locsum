@@ -4,7 +4,9 @@ Terminal tool for offline transcription and summarization of audio/video files.
 
 ## Hardware Requirements
 
-The transcription can be run on a decent laptop without a GPU, but the summarization requires a powerful GPU in order to get good results. I could make it work on my [NVIDIA Jetson Orin Nano Super Developer Kit](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/nano-super-developer-kit/) (8GB memory, 67 TOPS), but it didn't have enough memory to run LLM models with more than 8B parameters, so the summaries were not so good. I recently got a [ASUS Ascent GX10](https://www.asus.com/networking-iot-servers/desktop-ai-supercomputer/ultra-small-ai-supercomputers/asus-ascent-gx10/)  (128 GB memory, 1000 TFLOPS), which can run much bigger models and so can generate much better summaries. I'm currently using the 30B parameters `glm-4.7-flash` model with very satisfying results. The GX10 supposedly can run models up to 200B parameters, but for now there are not much models available on Ollama between 100B and 200B parameters.
+Transcription can run on a CPU without a GPU, but high-quality summarization requires significant GPU resources. I initially used an [NVIDIA Jetson Orin Nano Super Developer Kit](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/nano-super-developer-kit/). While capable, its 8GB unified memory limited me to ~8B parameter models, which produced subpar summaries.
+
+I recently upgraded to an [ASUS Ascent GX10](https://www.asus.com/networking-iot-servers/desktop-ai-supercomputer/ultra-small-ai-supercomputers/asus-ascent-gx10/). With 128GB of coherent unified system RAM, I can now run much larger models. I am currently running a 30B parameter model (quantized) with excellent results. Theoretically, the hardware supports models up to 200B parameters.
 
 ## Dependencies
 
