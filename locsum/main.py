@@ -115,7 +115,7 @@ def transcribe(filename, language):
     # It isn't necessary to import torch and explicitely load the model to CUDA.
     # Whisper library handles device detection automatically.
     model = whisper.load_model(whisper_model)
-    logger.debug(f'Transcribing text with {whisper_model} model on {model.device} device')
+    logger.info(f'Transcribing text with {whisper_model} model on {model.device} device')
     result = model.transcribe(filename, language=language)
 
     return result['text']
@@ -123,7 +123,7 @@ def transcribe(filename, language):
 
 def summarize(transcript):
     # Summarize with Ollama
-    logger.debug(f'Summarizing text with {LLM_MODEL} model')
+    logger.info(f'Summarizing text with {LLM_MODEL} model')
 
     response = ollama.chat(model=LLM_MODEL, messages=[
       {

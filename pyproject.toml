@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling >= 1.28"]
+build-backend = "hatchling.build"
+
+[project]
+name = "locsum"
+dynamic = ["version"]
+description = "Terminal tool for offline transcription and summarization of audio/video files."
+readme = "README.md"
+requires-python = ">=3.11"  # Because of tomllib
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Monsieur Linux", email = "info@mlinux.ca"}]
+keywords = ["python", "cli", "llm", "youtube", "privacy", "ollama", "offline", "whisper"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "ollama>=0.6.1,<1.0.0",
+    "openai-whisper>=20250625",
+]
+
+[project.urls]
+Repository = "https://github.com/monsieurlinux/locsum"
+
+[project.scripts]
+locsum = "locsum.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["locsum"]
+
+[tool.hatch.version]
+path = "locsum/__init__.py"
+
