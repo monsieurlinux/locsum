@@ -77,7 +77,7 @@ def main():
         all_files.extend(glob.glob(pattern))
 
     for filename in all_files:
-        logger.info(f'Processing {filename}')
+        print(f'Processing {filename}')
         transcript_file = replace_extension(filename, 'txt')
         summary_file = replace_extension(filename, 'md')
         summary_file = cleanup_filename(summary_file)
@@ -90,14 +90,14 @@ def main():
         else:
             if args.simulate:
                 transcript_text = 'simulated transcription text'
-                logger.debug(f'Simulating transcription')
+                logger.info(f'Simulating transcription')
             else:
                 transcript_text = transcribe(filename, args.language)
                 write_file(transcript_file, transcript_text)
 
         if args.simulate:
             summary_text = 'simulated summary text'
-            logger.debug(f'Simulating summarization')
+            logger.info(f'Simulating summarization')
         else:
             summary_text = summarize(transcript_text)
             write_file(summary_file, summary_text)
@@ -115,7 +115,7 @@ def transcribe(filename, language):
     # It isn't necessary to import torch and explicitely load the model to CUDA.
     # Whisper library handles device detection automatically.
     model = whisper.load_model(whisper_model)
-    logger.info(f'Transcribing text with {whisper_model} model on {model.device} device')
+    print(f'Transcribing with {whisper_model} model on {model.device} device')
     result = model.transcribe(filename, language=language)
 
     return result['text']
@@ -123,7 +123,7 @@ def transcribe(filename, language):
 
 def summarize(transcript):
     # Summarize with Ollama
-    logger.info(f'Summarizing text with {LLM_MODEL} model')
+    print(f'Summarizing with {LLM_MODEL} model')
 
     response = ollama.chat(model=LLM_MODEL, messages=[
       {
@@ -142,13 +142,13 @@ def summarize(transcript):
 def write_file(filename, content):
     with open(filename, 'w') as file:
         file.write(content)
-    logger.debug(f'Wrote to {filename}')
+    logger.info(f'Wrote to {filename}')
 
 
 def read_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
         content = file.read()
-    logger.debug(f'Read from {filename}')
+    logger.info(f'Read from {filename}')
     return content
 
 
@@ -167,7 +167,24 @@ def cleanup_filename(filename):
     return f'{p.parent}/{stem}{p.suffix}'
 
 
+def setup_logging(level=logging.DEBUG):
+    """Configure logging for this module"""
+    # print() is for user consumption, logging is for developer consumption
+    #logger.handlers.clear()  # Remove any existing handlers from your logger
+    if not logger.handlers:  # Prevent duplicate handlers
+        # TODO: Optionaly make the call to basicConfig if I need to
+        handler = logging.StreamHandler()  # pass sys.stdout?
+        handler.setLevel(level)
+        formatter = logging.Formatter('%(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(level)
+        logger.propagate = False  # Don't bubble up to root
+
+
 if __name__ == '__main__':
+    #setup_logging()  # Try this instead if messages are not displayed
+
     # Configure the root logger
     logging.basicConfig(level=logging.WARNING,
                         format='%(levelname)s - %(message)s')
