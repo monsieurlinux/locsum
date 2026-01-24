@@ -1,6 +1,6 @@
 # Locsum
 
-Terminal tool for offline transcription and summarization of audio/video files.
+Terminal tool for batch offline transcription and summarization of audio/video files.
 
 ## Hardware Requirements
 
@@ -21,7 +21,27 @@ These libraries and their sub-dependencies will be installed automatically when 
 
 ### Whisper Installation
 
-Coming soon.
+Here is how I installed Whisper on my GX10. The exact steps may differ on your system.
+
+- **Prerequisites**: Ensure `ffmpeg` is installed on your system
+- **Get the CUDA version**: Run `nvidia-smi` to check your driver version
+  Output example: `CUDA version 13.0, (GPU) driver version 580.95.05`
+- **Install [PyTorch](https://pytorch.org/get-started/locally/) and [Whisper](https://github.com/openai/whisper)**: Create a [virtual environment](https://docs.python.org/3/tutorial/venv.html) and install the CUDA 13.0 build of PyTorch (only `torch` is required, not `torchvision`)
+
+```sh
+python3 -m venv ~/.local/venvs/whisper
+source ~/.local/venvs/whisper/bin/activate
+pip3 install torch --index-url https://download.pytorch.org/whl/cu130
+pip3 install openai-whisper
+```
+- Test CUDA is available in PyTorch and load the smallest Whisper model
+```python
+python3
+>>> import torch
+>>> import whisper
+>>> torch.cuda.is_available()
+>>> model = whisper.load_model("tiny").to("cuda")
+```
 
 ### Ollama Installation
 
