@@ -19,9 +19,17 @@ These libraries and their sub-dependencies will be installed automatically when 
 
 ## Installation
 
-It is recommended to install Locsum within a [virtual environment](https://docs.python.org/3/tutorial/venv.html) to avoid conflicts with system packages. Some Linux distributions enforce this. You can use `pipx` to handle the virtual environment automatically, or create one manually and use `pip`.
+### Whisper Installation
 
-### Installation with `pipx`
+Coming soon.
+
+### Ollama Installation
+
+Coming soon.
+
+### Locsum Installation with `pipx`
+
+It is recommended to install Locsum within a [virtual environment](https://docs.python.org/3/tutorial/venv.html) to avoid conflicts with system packages. Some Linux distributions enforce this. You can use `pipx` to handle the virtual environment automatically, or create one manually and use `pip`.
 
 `pipx` installs Locsum in an isolated environment and makes it available globally.
 
@@ -54,7 +62,7 @@ You may need to close and restart your terminal for the PATH changes to take eff
 pipx install locsum
 ```
 
-### Installation with `pip`
+### LocsumInstallation with `pip`
 
 If you prefer to manage the virtual environment manually, you can create and activate it by following this [tutorial](https://docs.python.org/3/tutorial/venv.html). Then install Locsum:
 
@@ -72,7 +80,7 @@ locsum [arguments] FILE [FILE ...]
 
 ### Command-Line Arguments
 
-None for now.
+Coming soon.
 
 ## Configuration
 
@@ -85,10 +93,6 @@ When you run Locsum for the first time, a `config.toml` file is automatically cr
 *   **Windows:** `C:/Users/YourUsername/AppData/Roaming/locsum`
 
 You can edit this file to customize various settings. Common customizations include....
-
-## Whisper Installation
-
-## Ollama Installation
 
 ## VPN Setup
 
@@ -109,7 +113,7 @@ First update your system with `sudo apt update && sudo apt upgrade`. If the kern
 
 ## Radio Deactivation
 
-For a truly air-gapped system and to eliminate electromagnetic radiation, here is how I disabled the antennas:
+For a truly air-gapped system and to eliminate electromagnetic radiation, here is how to disable the antennas:
 
 - Disable Bluetooth:
 
