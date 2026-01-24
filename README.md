@@ -1,4 +1,4 @@
-# locsum
+# Locsum
 
 Terminal tool for offline transcription and summarization of audio/video files.
 
@@ -6,24 +6,24 @@ Terminal tool for offline transcription and summarization of audio/video files.
 
 Transcription can run on a CPU without a GPU, but high-quality summarization requires significant GPU resources. I initially used an [NVIDIA Jetson Orin Nano Super Developer Kit](https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/nano-super-developer-kit/). While capable, its 8GB unified memory limited me to ~8B parameter models, which produced subpar summaries.
 
-I recently upgraded to an [ASUS Ascent GX10](https://www.asus.com/networking-iot-servers/desktop-ai-supercomputer/ultra-small-ai-supercomputers/asus-ascent-gx10/). With 128GB of coherent unified system RAM, I can now run much larger models. I am currently running a 30B parameter model (quantized) with excellent results. Theoretically, the hardware supports models up to 200B parameters.
+I recently upgraded to an [ASUS Ascent GX10](https://www.asus.com/networking-iot-servers/desktop-ai-supercomputer/ultra-small-ai-supercomputers/asus-ascent-gx10/). With 128GB of unified memory, I can now run much larger models. I am currently running a 30B parameter model (quantized) with excellent results. Theoretically, the hardware supports models up to 200B parameters.
 
 ## Dependencies
 
-locsum requires the following external libraries:
+Locsum requires the following external libraries:
 
 * **[ollama](https://github.com/ollama/ollama-python)**: Used for text summarization.
 * **[openai-whisper](https://github.com/openai/whisper)**: Used for audio transcription.
 
-These libraries and their sub-dependencies will be installed automatically when you install locsum.
+These libraries and their sub-dependencies will be installed automatically when you install Locsum.
 
 ## Installation
 
-It is recommended to install locsum within a [virtual environment](https://docs.python.org/3/tutorial/venv.html) to avoid conflicts with system packages. Some Linux distributions enforce this. You can use `pipx` to handle the virtual environment automatically, or create one manually and use `pip`.
+It is recommended to install Locsum within a [virtual environment](https://docs.python.org/3/tutorial/venv.html) to avoid conflicts with system packages. Some Linux distributions enforce this. You can use `pipx` to handle the virtual environment automatically, or create one manually and use `pip`.
 
 ### Installation with `pipx`
 
-`pipx` installs locsum in an isolated environment and makes it available globally.
+`pipx` installs Locsum in an isolated environment and makes it available globally.
 
 **1. Install `pipx`:**
 
@@ -48,7 +48,7 @@ It is recommended to install locsum within a [virtual environment](https://docs.
 
 You may need to close and restart your terminal for the PATH changes to take effect.
 
-**2. Install locsum:**
+**2. Install Locsum:**
 
 ```bash
 pipx install locsum
@@ -56,7 +56,7 @@ pipx install locsum
 
 ### Installation with `pip`
 
-If you prefer to manage the virtual environment manually, you can create and activate it by following this [tutorial](https://docs.python.org/3/tutorial/venv.html). Then install locsum:
+If you prefer to manage the virtual environment manually, you can create and activate it by following this [tutorial](https://docs.python.org/3/tutorial/venv.html). Then install Locsum:
 
 ```bash
 pip install locsum
@@ -78,7 +78,7 @@ None for now.
 
 (Not yet implemented.)
 
-When you run locsum for the first time, a `config.toml` file is automatically created. Its location depends on your operating system (typical paths are listed below):
+When you run Locsum for the first time, a `config.toml` file is automatically created. Its location depends on your operating system (typical paths are listed below):
 
 *   **Linux:** `~/.config/locsum`
 *   **macOS:** `~/Library/Preferences/locsum`
@@ -92,7 +92,7 @@ You can edit this file to customize various settings. Common customizations incl
 
 ## VPN Setup
 
-The goal being to process our files locally, we might as well do it as much privately as possible. Here is how I installed and configured WireGuard VPN on my GX10.
+Since the goal is to process files locally, we might as well download them as privately as possible. Here is how I installed and configured WireGuard VPN on my GX10.
 
 First update your system with `sudo apt update && sudo apt upgrade`. If the kernel is updated during this step, a reboot is required before continuing.
 
