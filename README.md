@@ -12,8 +12,8 @@ I recently upgraded to an [ASUS Ascent GX10](https://www.asus.com/networking-iot
 
 Locsum requires the following external libraries:
 
-* **[ollama](https://github.com/ollama/ollama-python)**: Used for text summarization.
-* **[openai-whisper](https://github.com/openai/whisper)**: Used for audio transcription.
+* **[ollama](https://github.com/ollama/ollama-python):** Used for text summarization
+* **[openai-whisper](https://github.com/openai/whisper):** Used for audio transcription
 
 These libraries and their sub-dependencies will be installed automatically when you install Locsum.
 
@@ -23,9 +23,9 @@ These libraries and their sub-dependencies will be installed automatically when 
 
 Here is how I installed Whisper on my GX10. The exact steps may differ on your system.
 
-- **Prerequisites**: Ensure `ffmpeg` is installed on your system
-- **Get the CUDA version**: Run `nvidia-smi` to check your driver version (13.0 in my case)
-- **Install [PyTorch](https://pytorch.org/get-started/locally/) and [Whisper](https://github.com/openai/whisper)**: Create a [virtual environment](https://docs.python.org/3/tutorial/venv.html) and install the CUDA 13.0 build of PyTorch (only `torch` is required, not `torchvision`)
+- **Prerequisites:** Ensure `ffmpeg` is installed on your system
+- **Get the CUDA version:** Run `nvidia-smi` to check your driver version (13.0 in my case)
+- **Install [PyTorch](https://pytorch.org/get-started/locally/) and [Whisper](https://github.com/openai/whisper):** Create a [virtual environment](https://docs.python.org/3/tutorial/venv.html) and install the CUDA 13.0 build of PyTorch (only `torch` is required, not `torchvision`)
 
 ```sh
 python3 -m venv ~/.local/venvs/whisper
@@ -33,7 +33,7 @@ source ~/.local/venvs/whisper/bin/activate
 pip3 install torch --index-url https://download.pytorch.org/whl/cu130
 pip3 install openai-whisper
 ```
-- **Verify installation**: Test CUDA is available in PyTorch and load the smallest Whisper model
+- **Verify installation:** Test CUDA is available in PyTorch and load the smallest Whisper model
 ```python
 python3
 >>> import torch
@@ -107,9 +107,9 @@ Coming soon.
 
 When you run Locsum for the first time, a `config.toml` file is automatically created. Its location depends on your operating system (typical paths are listed below):
 
-*   **Linux:** `~/.config/locsum`
-*   **macOS:** `~/Library/Preferences/locsum`
-*   **Windows:** `C:/Users/YourUsername/AppData/Roaming/locsum`
+- **Linux:** `~/.config/locsum`
+- **macOS:** `~/Library/Preferences/locsum`
+- **Windows:** `C:/Users/YourUsername/AppData/Roaming/locsum`
 
 You can edit this file to customize various settings. Common customizations include....
 
@@ -123,25 +123,25 @@ First update your system with `sudo apt update && sudo apt upgrade`. If the kern
 - Download WireGuard configuration from my [Proton VPN](https://protonvpn.com/) account
 - Copy the configuration file to `/etc/wireguard/protonvpn.conf` and `chown root:root` (with sudo)
 - Test connection manually
-  - Connect : `sudo wg-quick up protonvpn`
-  - Check connection : `sudo wg`
-  - Check IP address : `curl -4 ip.me`
-  - Disconnect : `sudo wg-quick down protonvpn`
-- Connect at boot : `sudo systemctl enable --now wg-quick@protonvpn.service`
+  - Connect: `sudo wg-quick up protonvpn`
+  - Check connection: `sudo wg`
+  - Check IP address: `curl -4 ip.me`
+  - Disconnect: `sudo wg-quick down protonvpn`
+- Connect at boot: `sudo systemctl enable --now wg-quick@protonvpn.service`
 - Reboot and check VPN connection / IP address
 
 ## Radio Deactivation
 
 For a truly air-gapped system and to eliminate electromagnetic radiation, here is how to disable the antennas:
 
-- Disable Bluetooth:
+- **Disable Bluetooth:**
 
 ```sh
 sudo systemctl disable --now bluetooth
 sudo rfkill block bluetooth
 ```
 
-- Disable wifi:
+- **Disable wifi:**
 
 ```sh
 sudo systemctl disable --now wpa_supplicant
@@ -149,7 +149,7 @@ sudo rfkill block wifi
 nmcli radio wifi off
 ```
 
-- Check:
+- **Check:**
 
 ```sh
 sudo systemctl is-enabled bluetooth
