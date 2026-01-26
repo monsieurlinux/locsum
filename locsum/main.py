@@ -14,6 +14,7 @@ import logging
 #import shutil
 import re
 import sys
+import time
 #import tomllib
 from pathlib import Path
 
@@ -50,12 +51,8 @@ def main():
                         help='audio/video file to process')
     parser.add_argument('-l', '--language', default=DEFAULT_LANGUAGE,
                         help='set the language of the audio (default: en)')
-    parser.add_argument('-s', '--skip-transcription', action='store_true',
-                        help='skip transcription, use cached version instead')
-    parser.add_argument('-S', '--simulate', action='store_true',
-                        help='skip transcription and summarization')
     parser.add_argument('-t', '--tiny', action='store_true',
-                        help='using tiny models for testing')
+                        help='use tiny models for testing')
     parser.add_argument('-v', '--version', action='version', 
                         version=f'%(prog)s {__version__}')
     args = parser.parse_args()
@@ -73,34 +70,57 @@ def main():
 
     # Create a list containing all files from all patterns like '*.m4a',
     # because under Windows the terminal doesn't expand wildcard arguments.
+    all_start_time = time.time()
     all_files = []
     for pattern in args.filenames:
         all_files.extend(glob.glob(pattern))
 
     for filename in all_files:
         print(f'Processing {filename}')
-        transcript_file = replace_extension(filename, 'txt')
-        summary_file = replace_extension(filename, 'md')
-        summary_file = cleanup_filename(summary_file)
-        pdf_file = replace_extension(filename, 'pdf')
+        start_time = time.time()
+        extension = get_file_extension(filename)
+        transcript_text = None
+        summary_text = None
+        next_step = 'txt'
+        
+        if extension == 'txt':
+            # Processing a 'txt' file, so skip to summarization
+            next_step = 'md'
+        elif extension == 'md':
+            # Processing a 'md' file, so skip to pdf generation
+            next_step = 'pdf'
 
-        if args.skip_transcription:
-            transcript_text = read_file(transcript_file)
-        else:
-            if args.simulate:
-                transcript_text = 'simulated transcription text'
-                logger.info(f'Simulating transcription')
-            else:
-                transcript_text = transcribe(filename, args.language)
-                write_file(transcript_file, transcript_text)
+        if next_step == 'txt':
+            # Assume audio file, attempt transcription
+            txt_file = replace_extension(filename, 'txt')
+            transcript_text = transcribe(filename, args.language)
+            write_file(txt_file, transcript_text)
+            next_step = 'md'
 
-        if args.simulate:
-            summary_text = 'simulated summary text'
-            logger.info(f'Simulating summarization')
-        else:
+        if next_step == 'md':
+            # Generate a summary from the transcription
+            md_file = replace_extension(filename, 'md')
+            if not transcript_text:
+                # We are starting with a 'txt' file
+                transcript_text = read_file(filename)
             summary_text = summarize(transcript_text)
-            write_file(summary_file, summary_text)
-            md2pdf(summary_file, pdf_file)
+            write_file(md_file, summary_text)
+            next_step = 'pdf'
+
+        if next_step == 'pdf':
+            # Generate a pdf from the summary
+            pdf_file = replace_extension(filename, 'pdf')
+            pdf_file = cleanup_filename(pdf_file)
+            if not summary_text:
+                # We are starting with a 'md' file
+                summary_text = read_file(filename)
+            write_pdf(pdf_file, summary_text)
+
+        exec_time = time.time() - start_time
+        print(f'File processed in {format_time(exec_time)}')
+
+    all_exec_time = time.time() - all_start_time
+    print(f'All files processed in {format_time(exec_time)}')
 
 
 def transcribe(filename, language):
@@ -114,7 +134,10 @@ def transcribe(filename, language):
     # Whisper library handles device detection automatically.
     model = whisper.load_model(whisper_model)
     print(f'Transcribing with {whisper_model} model on {model.device} device')
+    start_time = time.time()
     result = model.transcribe(filename, language=language)
+    exec_time = time.time() - start_time
+    print(f'Done in {format_time(exec_time)}')
 
     return result['text']
 
@@ -122,6 +145,7 @@ def transcribe(filename, language):
 def summarize(transcript):
     # Summarize with Ollama
     print(f'Summarizing with {LLM_MODEL} model')
+    start_time = time.time()
 
     response = ollama.chat(model=LLM_MODEL, messages=[
       {
@@ -130,47 +154,20 @@ def summarize(transcript):
       },
     ])
 
+    exec_time = time.time() - start_time
+    print(f'Done in {format_time(exec_time)}')
     summary = response['message']['content']
 
     return summary
 
 
-def md2pdf(md_file, pdf_file):
-    with open(md_file, 'r') as f:
-        md_content = f.read()
-
+def write_pdf(pdf_file, md_content):
     # Parse markdown
     md = markdown_it.MarkdownIt()
     html_content = md.render(md_content)
 
     # CSS styling
-    css = """
-    body {
-        font-family: 'Times New Roman', Times, serif;
-        font-size: 16px;
-        line-height: 1.3;
-        margin: 0;
-        padding: 0;
-    }
-
-    code {
-        font-family: 'Courier New', Courier, monospace;
-    }
-
-    p {
-        margin: 1.2em 0;  /* top and bottom */
-    }
-
-    ul, ol {
-        margin: 0;
-        padding: 0 0 0 1.5em;  /* left only */
-    }
-
-    li {
-        margin: 0.4em 0;  /* top and bottom */
-        padding: 0;
-    }
-    """
+    css = read_file(PROJECT_ROOT / 'locsum' / 'pdf.css')
 
     # HTML code
     html = f"""
@@ -185,24 +182,35 @@ def md2pdf(md_file, pdf_file):
     """
     
     HTML(string=html).write_pdf(pdf_file)
-    logger.info(f'Wrote to {pdf_file}')
+    logger.debug(f'Wrote to {pdf_file}')
+
+
+def format_time(seconds):
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 
 
 def write_file(filename, content):
     with open(filename, 'w') as file:
         file.write(content)
-    logger.info(f'Wrote to {filename}')
+    logger.debug(f'Wrote to {filename}')
 
 
 def read_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
         content = file.read()
-    logger.info(f'Read from {filename}')
+    logger.debug(f'Read from {filename}')
     return content
 
 
 def get_head_tail(s, head_len=40, tail_len=40, sep="..."):
     return (s[:head_len] + sep + s[-tail_len:])
+
+
+def get_file_extension(filename):
+    p = Path(filename)
+    return p.suffix[1:]  # Remove the leading dot
 
 
 def replace_extension(filename, extension = ''):
@@ -236,7 +244,8 @@ if __name__ == '__main__':
 
     # Configure the root logger
     logging.basicConfig(level=logging.WARNING,
-                        format='%(levelname)s - %(message)s')
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%H:%M:%S')
 
     # Set level for all existing loggers (notably from ttFont module)
     for name in logging.Logger.manager.loggerDict:
