@@ -1,5 +1,7 @@
 __pycache__/
+archive/
 dist/
 *.m4a
 *.md
+*.pdf
 *.txt

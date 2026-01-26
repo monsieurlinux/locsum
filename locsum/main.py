@@ -18,8 +18,10 @@ import sys
 from pathlib import Path
 
 # Third-party library imports
+import markdown_it
 import ollama
 #import torch
+from weasyprint import HTML
 import whisper
 
 # Add project root to sys.path so script can be called directly w/o 'python3 -m'
@@ -31,7 +33,6 @@ if str(PROJECT_ROOT) not in sys.path:
 from locsum import __version__
 
 # Configuration constants
-# TODO: Add a config file
 DEFAULT_LANGUAGE = 'en'
 WHISPER_MODEL_ENGLISH = 'base.en'
 WHISPER_MODEL_MULTILINGUAL = 'turbo'
@@ -81,9 +82,7 @@ def main():
         transcript_file = replace_extension(filename, 'txt')
         summary_file = replace_extension(filename, 'md')
         summary_file = cleanup_filename(summary_file)
-
-        # TODO: Download files with yt-dlp
-        # https://github.com/yt-dlp/yt-dlp#embedding-yt-dlp
+        pdf_file = replace_extension(filename, 'pdf')
 
         if args.skip_transcription:
             transcript_text = read_file(transcript_file)
@@ -101,12 +100,11 @@ def main():
         else:
             summary_text = summarize(transcript_text)
             write_file(summary_file, summary_text)
+            md2pdf(summary_file, pdf_file)
 
 
 def transcribe(filename, language):
     # Transcribe with Whisper
-    # TODO: Try https://github.com/SYSTRAN/faster-whisper
-    #           https://github.com/Vaibhavs10/insanely-fast-whisper
     if language == 'en':
         whisper_model = WHISPER_MODEL_ENGLISH
     else:
@@ -132,11 +130,62 @@ def summarize(transcript):
       },
     ])
 
-    # TODO: Remove the thinking process from the summary
-    #sed -i '0,/\.\.\.done thinking\./d' "$summary"
     summary = response['message']['content']
 
     return summary
+
+
+def md2pdf(md_file, pdf_file):
+    with open(md_file, 'r') as f:
+        md_content = f.read()
+
+    # Parse markdown
+    md = markdown_it.MarkdownIt()
+    html_content = md.render(md_content)
+
+    # CSS styling
+    css = """
+    body {
+        font-family: 'Times New Roman', Times, serif;
+        font-size: 16px;
+        line-height: 1.3;
+        margin: 0;
+        padding: 0;
+    }
+
+    code {
+        font-family: 'Courier New', Courier, monospace;
+    }
+
+    p {
+        margin: 1.2em 0;  /* top and bottom */
+    }
+
+    ul, ol {
+        margin: 0;
+        padding: 0 0 0 1.5em;  /* left only */
+    }
+
+    li {
+        margin: 0.4em 0;  /* top and bottom */
+        padding: 0;
+    }
+    """
+
+    # HTML code
+    html = f"""
+    <html>
+    <head>
+        <style>{css}</style>
+    </head>
+    <body>
+        {html_content}
+    </body>
+    </html>
+    """
+    
+    HTML(string=html).write_pdf(pdf_file)
+    logger.info(f'Wrote to {pdf_file}')
 
 
 def write_file(filename, content):
@@ -188,7 +237,11 @@ if __name__ == '__main__':
     # Configure the root logger
     logging.basicConfig(level=logging.WARNING,
                         format='%(levelname)s - %(message)s')
-    
+
+    # Set level for all existing loggers (notably from ttFont module)
+    for name in logging.Logger.manager.loggerDict:
+        logging.getLogger(name).setLevel(logging.WARNING)
+
     # Configure this script's logger
     logger.setLevel(logging.DEBUG)
 
