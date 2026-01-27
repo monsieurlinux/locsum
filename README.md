@@ -1,3 +1,5 @@
+![Locsum: Batch Offline Transcription and Summarization of Videos](https://github.com/monsieurlinux/locsum/raw/main/img/locsum-batch-offline-transcription-summarization.png "Locsum: Batch Offline Transcription and Summarization of Videos")
+
 # Locsum
 
 [![PyPI][pypi-badge]][pypi-link]
