@@ -16,6 +16,7 @@ import re
 import sys
 import time
 #import tomllib
+from datetime import datetime
 from pathlib import Path
 
 # Third-party library imports
@@ -110,7 +111,7 @@ def main():
         if next_step == 'pdf':
             # Generate a pdf from the summary
             pdf_file = replace_extension(filename, 'pdf')
-            pdf_file = cleanup_filename(pdf_file)
+            #pdf_file = cleanup_filename(pdf_file)
             if not summary_text:
                 # We are starting with a 'md' file
                 summary_text = read_file(filename)
@@ -120,7 +121,7 @@ def main():
         print(f'File processed in {format_time(exec_time)}')
 
     all_exec_time = time.time() - all_start_time
-    print(f'All files processed in {format_time(exec_time)}')
+    print(f'All files processed in {format_time(all_exec_time)}')
 
 
 def transcribe(filename, language):
@@ -165,18 +166,35 @@ def write_pdf(pdf_file, md_content):
     # Parse markdown
     md = markdown_it.MarkdownIt()
     html_content = md.render(md_content)
+    date = datetime.now().strftime('%Y-%m-%d')
+    header = get_file_stem(pdf_file) + ' / ' + date
 
     # CSS styling
     css = read_file(PROJECT_ROOT / 'locsum' / 'pdf.css')
-
+    
     # HTML code
-    html = f"""
+    html = """
     <html>
     <head>
-        <style>{css}</style>
+        <style>
+            @page {
+                size: letter;
+                
+                @top-center {
+                    content: " """ + header + """ ";
+                    font-size: 8pt;
+                }
+                
+                @bottom-center {
+                    content: counter(page) " / " counter(pages);
+                    font-size: 8pt;
+                }
+            }
+        </style>
+        <style>""" + css + """</style>
     </head>
     <body>
-        {html_content}
+        """ + html_content + """
     </body>
     </html>
     """
@@ -211,6 +229,11 @@ def get_head_tail(s, head_len=40, tail_len=40, sep="..."):
 def get_file_extension(filename):
     p = Path(filename)
     return p.suffix[1:]  # Remove the leading dot
+
+
+def get_file_stem(filename):
+    p = Path(filename)
+    return p.stem
 
 
 def replace_extension(filename, extension = ''):
