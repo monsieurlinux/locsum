@@ -79,14 +79,18 @@ def main():
         LLM_MODEL = 'tinyllama'
         LLM_PROMPT = "Summarize:"
 
-    # Create a list containing all files from all patterns like '*.m4a',
-    # because under Windows the terminal doesn't expand wildcard arguments.
     all_start_time = time.time()
-    all_files = []
-    for pattern in args.filenames:
-        all_files.extend(glob.glob(pattern))
+    filenames = []
 
-    for filename in all_files:
+    if sys.platform == "win32":
+        # On Windows, expand glob patterns (e.g. *.mp4)
+        for pattern in args.filenames:
+            filenames.extend(glob.glob(pattern))
+    else:
+        # On Linux, use filenames as-is (no glob expansion needed)
+        filenames = args.filenames
+
+    for filename in filenames:
         print(f'Processing {filename}')
         start_time = time.time()
         extension = get_file_extension(filename)
