@@ -16,6 +16,7 @@ import re
 import sys
 import time
 #import tomllib
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -56,7 +57,16 @@ def main():
                         help='use tiny models for testing')
     parser.add_argument('-v', '--version', action='version', 
                         version=f'%(prog)s {__version__}')
+    parser.add_argument('-w', '--filter-warnings', action='store_true',
+                        help='suppress warnings from torch')
     args = parser.parse_args()
+
+    if args.filter_warnings:
+        # Suppress all CUDA-related warnings
+        warnings.filterwarnings("ignore", category=UserWarning, module="torch.cuda")
+
+        # Or suppress all warnings from torch
+        #warnings.filterwarnings("ignore", module="torch")
 
     if args.tiny:
         # TODO: Find a clean way to do this
@@ -182,12 +192,12 @@ def write_pdf(pdf_file, md_content):
                 
                 @top-center {
                     content: " """ + header + """ ";
-                    font-size: 8pt;
+                    font-size: 6pt;
                 }
                 
                 @bottom-center {
                     content: counter(page) " / " counter(pages);
-                    font-size: 8pt;
+                    font-size: 6pt;
                 }
             }
         </style>
