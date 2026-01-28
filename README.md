@@ -17,8 +17,10 @@ I recently upgraded to an [ASUS Ascent GX10][gx10-link], a lower-cost alternativ
 
 Locsum requires the following external libraries:
 
-* **[ollama][ollama-link]:** Used for text summarization
-* **[openai-whisper][whisper-link]:** Used for audio transcription
+- **[markdown-it][markdown-link]:** Used for Markdown to HTML conversion
+- **[ollama][ollama-link]:** Used for text summarization
+- **[weasyprint][weasyprint-link]:** Used for HTML to PDF conversion
+- **[whisper][whisper-link]:** Used for audio transcription
 
 These libraries and their sub-dependencies will be installed automatically when you install Locsum.
 
@@ -178,13 +180,14 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## Acknowledgements
 
-Thanks to the creators and contributors of the powerful [openai-whisper][whisper-link] and [ollama][ollama-link] libraries for making this project possible.
+Thanks to the creators and contributors of all the powerful libraries used in this project for making it possible.
 
 [github-releases]: https://github.com/monsieurlinux/locsum/releases
 [gx10-link]: https://www.asus.com/networking-iot-servers/desktop-ai-supercomputer/ultra-small-ai-supercomputers/asus-ascent-gx10/
 [jetson-link]: https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/nano-super-developer-kit/
 [license-badge]: https://img.shields.io/pypi/l/locsum.svg
 [license-link]: https://github.com/monsieurlinux/locsum/blob/main/LICENSE
+[markdown-link]: https://github.com/executablebooks/markdown-it-py
 [ollama-link]: https://github.com/ollama/ollama-python
 [proton-link]: https://protonvpn.com/
 [pypi-releases]: https://pypi.org/project/locsum/#history
@@ -193,5 +196,5 @@ Thanks to the creators and contributors of the powerful [openai-whisper][whisper
 [pytorch-link]: https://pytorch.org/get-started/locally/
 [spark-link]: https://www.nvidia.com/en-us/products/workstations/dgx-spark/
 [venv-link]: https://docs.python.org/3/tutorial/venv.html
+[weasyprint-link]: https://github.com/Kozea/WeasyPrint
 [whisper-link]: https://github.com/openai/whisper
-
