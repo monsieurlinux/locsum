@@ -23,7 +23,7 @@ from pathlib import Path
 # Third-party library imports
 import markdown_it
 import ollama
-#import torch
+import torch
 from weasyprint import HTML
 import whisper
 
@@ -44,8 +44,10 @@ logger = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('filenames', nargs='+', metavar='FILE',
+    parser.add_argument('filenames', nargs='*', metavar='FILE',
                         help='audio/video file to process')
+    parser.add_argument('-c', '--check-cuda', action='store_true',
+                        help='check if CUDA is available')
     parser.add_argument('-l', '--language', metavar='LANG',
                         help='set the language of the audio')
     parser.add_argument('-r', '--reset-config', action='store_true',
@@ -55,7 +57,7 @@ def main():
     parser.add_argument('-v', '--version', action='version', 
                         version=f'%(prog)s {__version__}')
     parser.add_argument('-w', '--filter-warnings', action='store_true',
-                        help='suppress warnings from torch')
+                        help='suppress warnings from PyTorch')
     args = parser.parse_args()
 
     try:
@@ -70,6 +72,18 @@ def main():
 
         # Or suppress all warnings from torch
         #warnings.filterwarnings("ignore", module="torch")
+
+    if args.check_cuda:
+        print(f'PyTorch {torch.__version__}')
+        if torch.cuda.is_available():
+            print(f'CUDA {torch.version.cuda} is available')
+        else:
+            print('CUDA is NOT available')
+        return
+
+    if not args.filenames:
+        print('Error: The following arguments are required: FILE')
+        return
 
     all_start_time = time.time()
     filenames = []

@@ -26,7 +26,7 @@ These libraries and their sub-dependencies will be installed automatically when 
 
 ## Installation
 
-First ensure `ffmpeg` is installed on your system, as it is required by whisper.
+First ensure `ffmpeg` is installed on your system, as it is required by Whisper.
 
 ### Ollama Installation
 
@@ -75,24 +75,23 @@ If you prefer to manage the virtual environment manually, you can create and act
 pip install locsum
 ```
 
-### PyTorch Upgrade for CUDA support
+### PyTorch Upgrade for GPU support
 
-Here is how I upgraded [PyTorch](https://pytorch.org/get-started/locally/) on my GX10, which is running Linux, with `pipx`. The exact steps will differ if you installed Locsum with `pip`.
+The default [PyTorch](https://pytorch.org/get-started/locally/) library installation doesn't include GPU support. Here is how I upgraded it on my GX10 with `pipx`. The commands will differ if you installed Locsum with `pip`.
 
 - **Get the CUDA version:** Run `nvidia-smi` to check your driver version (13.0 in my case)
-- **Upgrade PyTorch:** Uninstall PyTorch and reinstall the CUDA 13.0 build
+- **Upgrade PyTorch:** Uninstall PyTorch and reinstall the CUDA 13.0 build (cu130) with `pipx inject`
 
 ```sh
 pipx runpip locsum uninstall torch
 pipx inject locsum torch --index-url https://download.pytorch.org/whl/cu130
 ```
-- **Verify installation:** Test CUDA is available in PyTorch and load the smallest Whisper model
-```python
-python3
->>> import torch
->>> import whisper
->>> torch.cuda.is_available()
->>> model = whisper.load_model("tiny").to("cuda")
+
+- **Verify installation:** Run `locsum -c` to check that CUDA is available (available after release 0.2.0)
+
+```
+PyTorch 2.10.0+cu130
+CUDA 13.0 is available
 ```
 
 ## Deployments
@@ -122,7 +121,7 @@ When you run Locsum for the first time, a `config.toml` file is automatically cr
 - **macOS:** `~/Library/Preferences/locsum`
 - **Windows:** `C:/Users/YourUsername/AppData/Roaming/locsum`
 
-You can edit this file to customize various settings. Common customizations include whisper and ollama models to use.
+You can edit this file to customize various settings. Common customizations include Whisper and Ollama models to use.
 
 ## VPN Setup
 
