@@ -10,12 +10,12 @@ Licensed under the MIT License. See the LICENSE file for details.
 import argparse
 import glob
 import logging
-#import os
-#import shutil
+import os
 import re
+import shutil
 import sys
 import time
-#import tomllib
+import tomllib
 import warnings
 from datetime import datetime
 from pathlib import Path
@@ -35,12 +35,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # Local imports
 from locsum import __version__
 
-# Configuration constants
-DEFAULT_LANGUAGE = 'en'
-WHISPER_MODEL_ENGLISH = 'base.en'
-WHISPER_MODEL_MULTILINGUAL = 'turbo'
-LLM_MODEL = 'glm-4.7-flash'
-LLM_PROMPT = "Please provide a comprehensive, detailed, and structured breakdown of the following text. Do not just list events sequentially; instead, analyze the content and group it into distinct themes or categories. For each theme include a clear, bolded heading. Ensure the summary captures the full nuance of the speaker's opinions, including any criticisms, predictions, or advice offered. The tone should be informative and objective, accurately reflecting the source material. Here is the text:"
+CONFIG = {}
 
 # Get a logger for this script
 logger = logging.getLogger(__name__)
@@ -51,8 +46,10 @@ def main():
 
     parser.add_argument('filenames', nargs='+', metavar='FILE',
                         help='audio/video file to process')
-    parser.add_argument('-l', '--language', default=DEFAULT_LANGUAGE,
-                        help='set the language of the audio (default: en)')
+    parser.add_argument('-l', '--language', metavar='LANG',
+                        help='set the language of the audio')
+    parser.add_argument('-r', '--reset-config', action='store_true',
+                        help='reset configuration file to default')
     parser.add_argument('-t', '--tiny', action='store_true',
                         help='use tiny models for testing')
     parser.add_argument('-v', '--version', action='version', 
@@ -61,23 +58,18 @@ def main():
                         help='suppress warnings from torch')
     args = parser.parse_args()
 
+    try:
+        load_config(args.reset_config)
+    except FileNotFoundError as e:
+        print(f'Error: Failed to load config: {e}')
+        return
+
     if args.filter_warnings:
         # Suppress all CUDA-related warnings
         warnings.filterwarnings("ignore", category=UserWarning, module="torch.cuda")
 
         # Or suppress all warnings from torch
         #warnings.filterwarnings("ignore", module="torch")
-
-    if args.tiny:
-        # TODO: Find a clean way to do this
-        global WHISPER_MODEL_ENGLISH
-        global WHISPER_MODEL_MULTILINGUAL
-        global LLM_MODEL
-        global LLM_PROMPT
-        WHISPER_MODEL_ENGLISH = 'tiny.en'
-        WHISPER_MODEL_MULTILINGUAL = 'tiny'
-        LLM_MODEL = 'tinyllama'
-        LLM_PROMPT = "Summarize:"
 
     all_start_time = time.time()
     filenames = []
@@ -108,7 +100,7 @@ def main():
         if next_step == 'txt':
             # Assume audio file, attempt transcription
             txt_file = replace_extension(filename, 'txt')
-            transcript_text = transcribe(filename, args.language)
+            transcript_text = transcribe(filename, args.language, args.tiny)
             write_file(txt_file, transcript_text)
             next_step = 'md'
 
@@ -118,7 +110,7 @@ def main():
             if not transcript_text:
                 # We are starting with a 'txt' file
                 transcript_text = read_file(filename)
-            summary_text = summarize(transcript_text)
+            summary_text = summarize(transcript_text, args.tiny)
             write_file(md_file, summary_text)
             next_step = 'pdf'
 
@@ -138,12 +130,18 @@ def main():
     print(f'All files processed in {format_time(all_exec_time)}')
 
 
-def transcribe(filename, language):
+def transcribe(filename, language, tiny):
     # Transcribe with Whisper
-    if language == 'en':
-        whisper_model = WHISPER_MODEL_ENGLISH
+    if not language:
+        # No language argument provided, so use config file default
+        language = CONFIG['whisper']['default_language']
+
+    if tiny:
+        whisper_model = CONFIG['whisper']['tiny']['model']
+    elif language == 'en':
+        whisper_model = CONFIG['whisper']['model_english']
     else:
-        whisper_model = WHISPER_MODEL_MULTILINGUAL
+        whisper_model = CONFIG['whisper']['model_multilang']
 
     # It isn't necessary to import torch and explicitely load the model to CUDA.
     # Whisper library handles device detection automatically.
@@ -157,21 +155,28 @@ def transcribe(filename, language):
     return result['text']
 
 
-def summarize(transcript):
+def summarize(transcript, tiny):
     # Summarize with Ollama
-    print(f'Summarizing with {LLM_MODEL} model')
+    if tiny:
+        llm_model = CONFIG['ollama']['tiny']['model']
+        llm_prompt = CONFIG['ollama']['tiny']['prompt']
+    else:
+        llm_model = CONFIG['ollama']['model']
+        llm_prompt = CONFIG['ollama']['prompt']
+
+    print(f'Summarizing with {llm_model} model')
     start_time = time.time()
 
-    response = ollama.chat(model=LLM_MODEL, messages=[
+    response = ollama.chat(model=llm_model, messages=[
       {
         'role': 'user',
-        'content': f'{LLM_PROMPT} {transcript}',
+        'content': f'{llm_prompt} {transcript}',
       },
     ])
 
     exec_time = time.time() - start_time
     print(f'Done in {format_time(exec_time)}')
-    summary = response['message']['content']
+    summary = response['message']['content']  # TODO: use response.message.content?
 
     return summary
 
@@ -259,6 +264,50 @@ def cleanup_filename(filename):
     p = Path(filename)
     stem = re.sub(r"[^a-zA-Z0-9 .,'_-]", '-', p.stem)
     return f'{p.parent}/{stem}{p.suffix}'
+
+
+def load_config(reset_config = False):
+    global CONFIG
+
+    app_name = 'locsum'
+    config_file = 'config.toml'
+
+    config_dir = get_config_dir(app_name)
+    user_config_file = config_dir / config_file
+    default_config_file = PROJECT_ROOT / app_name / config_file
+
+    if not user_config_file.exists() or reset_config:
+        if default_config_file.exists():
+            shutil.copy2(default_config_file, user_config_file)
+            logger.debug(f'Config initialized at {user_config_file}')
+        else:
+            raise FileNotFoundError(f'Default config missing at {default_config_file}')
+    else:
+        logger.debug(f'Found config file at {user_config_file}')
+
+    with open(user_config_file, 'rb') as f:
+        CONFIG = tomllib.load(f)
+
+
+def get_config_dir(app_name):
+    if sys.platform == "win32":
+        # Windows: Use %APPDATA% (%USERPROFILE%\AppData\Roaming)
+        config_dir = Path(os.environ.get("APPDATA", "")) / app_name
+    elif sys.platform == "darwin":
+        # macOS: Use ~/Library/Preferences
+        config_dir = Path.home() / "Library" / "Preferences" / app_name
+    else:
+        # Linux and other Unix-like: Use ~/.config or XDG_CONFIG_HOME if set
+        config_home = os.environ.get("XDG_CONFIG_HOME", "")
+        if config_home:
+            config_dir = Path(config_home) / app_name
+        else:
+            config_dir = Path.home() / ".config" / app_name
+    
+    # Create the directory if it doesn't exist
+    config_dir.mkdir(parents=True, exist_ok=True)
+    
+    return config_dir
 
 
 def setup_logging(level=logging.DEBUG):

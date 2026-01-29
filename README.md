@@ -117,15 +117,13 @@ Coming soon.
 
 ## Configuration
 
-(Not yet implemented.)
-
 When you run Locsum for the first time, a `config.toml` file is automatically created. Its location depends on your operating system (typical paths are listed below):
 
 - **Linux:** `~/.config/locsum`
 - **macOS:** `~/Library/Preferences/locsum`
 - **Windows:** `C:/Users/YourUsername/AppData/Roaming/locsum`
 
-You can edit this file to customize various settings. Common customizations include....
+You can edit this file to customize various settings. Common customizations include whisper and ollama models to use.
 
 ## VPN Setup
 

@@ -1,0 +1,16 @@
+[whisper]
+default_language = 'en'
+model_english = 'base.en'  # best compromise between speed and quality
+model_multilang = 'turbo'  # 'base' not good enough for French, 'small' slower than 'turbo'
+
+[ollama]
+model = 'glm-4.7-flash'
+prompt = "Please provide a comprehensive, detailed, and structured breakdown of the following text. Do not just list events sequentially; instead, analyze the content and group it into distinct themes or categories. For each theme include a clear, bolded heading. Ensure the summary captures the full nuance of the speaker's opinions, including any criticisms, predictions, or advice offered. The tone should be informative and objective, accurately reflecting the source material. Here is the text:"
+
+[whisper.tiny]
+model = 'tiny.en'
+
+[ollama.tiny]
+model = 'tinyllama'
+prompt = 'Summarize:'
+
