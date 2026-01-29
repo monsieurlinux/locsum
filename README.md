@@ -26,28 +26,7 @@ These libraries and their sub-dependencies will be installed automatically when 
 
 ## Installation
 
-### Whisper Installation
-
-Here is how I installed Whisper on my GX10. The exact steps may differ on your system.
-
-- **Prerequisites:** Ensure `ffmpeg` is installed on your system
-- **Get the CUDA version:** Run `nvidia-smi` to check your driver version (13.0 in my case)
-- **Install [PyTorch][pytorch-link] and [Whisper][whisper-link]:** Create a [virtual environment][venv-link] and install the CUDA 13.0 build of PyTorch (only `torch` is required, not `torchvision`)
-
-```sh
-python3 -m venv ~/.local/venvs/whisper
-source ~/.local/venvs/whisper/bin/activate
-pip3 install torch --index-url https://download.pytorch.org/whl/cu130
-pip3 install openai-whisper
-```
-- **Verify installation:** Test CUDA is available in PyTorch and load the smallest Whisper model
-```python
-python3
->>> import torch
->>> import whisper
->>> torch.cuda.is_available()
->>> model = whisper.load_model("tiny").to("cuda")
-```
+First ensure `ffmpeg` is installed on your system, as it is required by whisper.
 
 ### Ollama Installation
 
@@ -94,6 +73,26 @@ If you prefer to manage the virtual environment manually, you can create and act
 
 ```bash
 pip install locsum
+```
+
+### PyTorch Upgrade for CUDA support
+
+Here is how I upgraded [PyTorch](https://pytorch.org/get-started/locally/) on my GX10, which is running Linux, with `pipx`. The exact steps will differ if you installed Locsum with `pip`.
+
+- **Get the CUDA version:** Run `nvidia-smi` to check your driver version (13.0 in my case)
+- **Upgrade PyTorch:** Uninstall PyTorch and reinstall the CUDA 13.0 build
+
+```sh
+pipx runpip locsum uninstall torch
+pipx inject locsum torch --index-url https://download.pytorch.org/whl/cu130
+```
+- **Verify installation:** Test CUDA is available in PyTorch and load the smallest Whisper model
+```python
+python3
+>>> import torch
+>>> import whisper
+>>> torch.cuda.is_available()
+>>> model = whisper.load_model("tiny").to("cuda")
 ```
 
 ## Deployments
