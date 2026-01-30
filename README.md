@@ -38,30 +38,30 @@ It is recommended to install Locsum within a [virtual environment][venv-link] to
 
 `pipx` installs Locsum in an isolated environment and makes it available globally.
 
-**1. Install `pipx`:**
+**1. Install `pipx`**
 
-*   **Linux (Debian / Ubuntu / Mint):**
-    
-    ```bash
-    sudo apt install pipx
-    pipx ensurepath
-    ```
-*   **Linux (Other) / macOS:**
-    
-    ```bash
-    python3 -m pip install --user pipx
-    python3 -m pipx ensurepath
-    ```
-*   **Windows:**
-    
-    ```bash
-    python -m pip install --user pipx
-    python -m pipx ensurepath
-    ```
+- **Linux (Debian / Ubuntu / Mint)**
+  
+  ```bash
+  sudo apt install pipx
+  pipx ensurepath
+  ```
+- **Linux (Other) / macOS**
+  
+  ```bash
+  python3 -m pip install --user pipx
+  python3 -m pipx ensurepath
+  ```
+- **Windows**
+  
+  ```bash
+  python -m pip install --user pipx
+  python -m pipx ensurepath
+  ```
 
-You may need to close and restart your terminal for the PATH changes to take effect.
+You may need to reopen your terminal for the PATH changes to take effect. If you encounter a problem, please refer to the official [pipx documentation][pipx-link].
 
-**2. Install Locsum:**
+**2. Install Locsum**
 
 ```bash
 pipx install locsum
@@ -77,22 +77,29 @@ pip install locsum
 
 ### PyTorch Upgrade for GPU support
 
-The default [PyTorch](https://pytorch.org/get-started/locally/) library installation doesn't include GPU support. Here is how I upgraded it on my GX10 with `pipx`. The commands will differ if you installed Locsum with `pip`.
+The default [PyTorch][pytorch-link] library installation doesn't include GPU support. Here is how to upgrade it.
 
 - **Get the CUDA version:** Run `nvidia-smi` to check your driver version (13.0 in my case)
-- **Upgrade PyTorch:** Uninstall PyTorch and reinstall the CUDA 13.0 build (cu130) with `pipx inject`
+- **Upgrade PyTorch:** Uninstall PyTorch and reinstall the right CUDA build (cu130 in my case)
+  - If you installed Locsum with `pipx`
 
-```sh
-pipx runpip locsum uninstall torch
-pipx inject locsum torch --index-url https://download.pytorch.org/whl/cu130
-```
+    ```sh
+    pipx runpip locsum uninstall torch
+    pipx inject locsum torch --index-url https://download.pytorch.org/whl/cu130
+    ```
+  - If you installed Locsum with `pip` (with your virtual environment activated)
+
+    ```sh
+    pip uninstall torch
+    pip install torch --index-url https://download.pytorch.org/whl/cu130
+    ```
 
 - **Verify installation:** Run `locsum -c` to check that CUDA is available (available after release 0.2.0)
 
-```
-PyTorch 2.10.0+cu130
-CUDA 13.0 is available
-```
+  ```
+  PyTorch 2.10.0+cu130
+  CUDA 13.0 is available
+  ```
 
 ## Deployments
 
@@ -144,29 +151,29 @@ First update your system with `sudo apt update && sudo apt upgrade`. If the kern
 
 For a truly air-gapped system and to eliminate electromagnetic radiation, here is how to disable the antennas:
 
-- **Disable Bluetooth:**
+- **Disable Bluetooth**
 
-```sh
-sudo systemctl disable --now bluetooth
-sudo rfkill block bluetooth
-```
+  ```sh
+  sudo systemctl disable --now bluetooth
+  sudo rfkill block bluetooth
+  ```
 
-- **Disable wifi:**
+- **Disable wifi**
 
-```sh
-sudo systemctl disable --now wpa_supplicant
-sudo rfkill block wifi
-nmcli radio wifi off
-```
+  ```sh
+  sudo systemctl disable --now wpa_supplicant
+  sudo rfkill block wifi
+  nmcli radio wifi off
+  ```
 
-- **Check:**
+- **Check**
 
-```sh
-sudo systemctl is-enabled bluetooth
-sudo systemctl is-enabled wpa_supplicant
-sudo rfkill list
-nmcli general status
-```
+  ```sh
+  sudo systemctl is-enabled bluetooth
+  sudo systemctl is-enabled wpa_supplicant
+  sudo rfkill list
+  nmcli general status
+  ```
 
 ## License
 
@@ -185,6 +192,7 @@ Thanks to the creators and contributors of all the powerful libraries used in th
 [license-link]: https://github.com/monsieurlinux/locsum/blob/main/LICENSE
 [markdown-link]: https://github.com/executablebooks/markdown-it-py
 [ollama-link]: https://github.com/ollama/ollama-python
+[pipx-link]: https://github.com/pypa/pipx
 [proton-link]: https://protonvpn.com/
 [pypi-releases]: https://pypi.org/project/locsum/#history
 [pypi-badge]: https://img.shields.io/pypi/v/locsum.svg
