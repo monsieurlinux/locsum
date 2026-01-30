@@ -79,22 +79,31 @@ pip install locsum
 
 The default [PyTorch][pytorch-link] library installation doesn't include GPU support. Here is how to upgrade it.
 
-- **Get the CUDA version:** Run `nvidia-smi` to check your driver version (13.0 in my case)
-- **Upgrade PyTorch:** Uninstall PyTorch and reinstall the right CUDA build (cu130 in my case)
-  - If you installed Locsum with `pipx`
+**1. Get the CUDA version**
 
-    ```sh
-    pipx runpip locsum uninstall torch
-    pipx inject locsum torch --index-url https://download.pytorch.org/whl/cu130
-    ```
-  - If you installed Locsum with `pip` (with your virtual environment activated)
+Run `nvidia-smi` to find your driver version (13.0 in my case).
 
-    ```sh
-    pip uninstall torch
-    pip install torch --index-url https://download.pytorch.org/whl/cu130
-    ```
+**2. Upgrade PyTorch**
 
-- **Verify installation:** Run `locsum -c` to check that CUDA is available (available after release 0.2.0)
+Uninstall PyTorch and reinstall the right CUDA build (cu130 in my case).
+
+- **If Locsum is installed with `pipx`**
+
+  ```sh
+  pipx runpip locsum uninstall torch
+  pipx inject locsum torch --index-url https://download.pytorch.org/whl/cu130
+  ```
+- **If Locsum is installed with `pip`** (with the virtual environment activated)
+
+  ```sh
+  pip uninstall torch
+  pip install torch --index-url https://download.pytorch.org/whl/cu130
+  ```
+  
+
+**3. Verify installation**
+
+Run `locsum -c` to check that CUDA is available (available after release 0.2.0).
 
   ```
   PyTorch 2.10.0+cu130
