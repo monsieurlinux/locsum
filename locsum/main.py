@@ -52,7 +52,9 @@ def main():
                         help='set the language of the audio')
     parser.add_argument('-r', '--reset-config', action='store_true',
                         help='reset configuration file to default')
-    parser.add_argument('-t', '--tiny', action='store_true',
+    parser.add_argument('-t', '--transcript-only', action='store_true',
+                        help="transcript only, don't generate a summary")
+    parser.add_argument('-T', '--tiny', action='store_true',
                         help='use tiny models for testing')
     parser.add_argument('-v', '--version', action='version', 
                         version=f'%(prog)s {__version__}')
@@ -116,7 +118,8 @@ def main():
             txt_file = replace_extension(filename, 'txt')
             transcript_text = transcribe(filename, args.language, args.tiny)
             write_file(txt_file, transcript_text)
-            next_step = 'md'
+            if args.transcript_only:
+                next_step = 'none'
 
         if next_step == 'md':
             # Generate a summary from the transcription
@@ -140,8 +143,9 @@ def main():
         exec_time = time.time() - start_time
         print(f'File processed in {format_time(exec_time)}')
 
-    all_exec_time = time.time() - all_start_time
-    print(f'All files processed in {format_time(all_exec_time)}')
+    if len(filenames) > 1:
+        all_exec_time = time.time() - all_start_time
+        print(f'All files processed in {format_time(all_exec_time)}')
 
 
 def transcribe(filename, language, tiny):
@@ -160,11 +164,12 @@ def transcribe(filename, language, tiny):
     # It isn't necessary to import torch and explicitely load the model to CUDA.
     # Whisper library handles device detection automatically.
     model = whisper.load_model(whisper_model)
-    print(f'Transcribing with {whisper_model} model on {model.device} device')
+    #print(f'Transcribing with {whisper_model} model on {model.device} device')
+    print(f'Transcribing with {whisper_model} model')
     start_time = time.time()
     result = model.transcribe(filename, language=language)
     exec_time = time.time() - start_time
-    print(f'Done in {format_time(exec_time)}')
+    logger.debug(f'Done in {format_time(exec_time)}')
 
     return result['text']
 
@@ -189,7 +194,7 @@ def summarize(transcript, tiny):
     ])
 
     exec_time = time.time() - start_time
-    print(f'Done in {format_time(exec_time)}')
+    logger.debug(f'Done in {format_time(exec_time)}')
     summary = response['message']['content']  # TODO: use response.message.content?
 
     return summary
