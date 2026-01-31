@@ -45,7 +45,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('filenames', nargs='*', metavar='FILE',
-                        help='audio/video file to process')
+                        help='file to process (audio/video, .txt or .md format)')
     parser.add_argument('-c', '--check-cuda', action='store_true',
                         help='check if CUDA is available')
     parser.add_argument('-l', '--language', metavar='LANG',
@@ -89,6 +89,7 @@ def main():
 
     all_start_time = time.time()
     filenames = []
+    num_files = 0
 
     if sys.platform == "win32":
         # On Windows, expand glob patterns (e.g. *.mp4)
@@ -99,7 +100,12 @@ def main():
         filenames = args.filenames
 
     for filename in filenames:
+        if not Path(filename).is_file():
+            print(f'Skipping {filename} (not a file)')
+            continue
+
         print(f'Processing {filename}')
+        num_files += 1
         start_time = time.time()
         extension = get_file_extension(filename)
         transcript_text = None
@@ -120,6 +126,8 @@ def main():
             write_file(txt_file, transcript_text)
             if args.transcript_only:
                 next_step = 'none'
+            else:
+                next_step = 'md'
 
         if next_step == 'md':
             # Generate a summary from the transcription
@@ -143,7 +151,7 @@ def main():
         exec_time = time.time() - start_time
         print(f'File processed in {format_time(exec_time)}')
 
-    if len(filenames) > 1:
+    if num_files > 1:
         all_exec_time = time.time() - all_start_time
         print(f'All files processed in {format_time(all_exec_time)}')
 
@@ -238,7 +246,7 @@ def write_pdf(pdf_file, md_content):
     """
     
     HTML(string=html).write_pdf(pdf_file)
-    logger.debug(f'Wrote to {pdf_file}')
+    #logger.debug(f'Wrote to {pdf_file}')
 
 
 def format_time(seconds):
@@ -250,13 +258,13 @@ def format_time(seconds):
 def write_file(filename, content):
     with open(filename, 'w') as file:
         file.write(content)
-    logger.debug(f'Wrote to {filename}')
+    #logger.debug(f'Wrote to {filename}')
 
 
 def read_file(filename):
     with open(filename, 'r', encoding='utf-8') as file:
         content = file.read()
-    logger.debug(f'Read from {filename}')
+    #logger.debug(f'Read from {filename}')
     return content
 
 
