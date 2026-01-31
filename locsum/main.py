@@ -76,6 +76,7 @@ def main():
         #warnings.filterwarnings("ignore", module="torch")
 
     if args.check_cuda:
+        # Check if CUDA is available
         print(f'PyTorch {torch.__version__}')
         if torch.cuda.is_available():
             print(f'CUDA {torch.version.cuda} is available')
@@ -84,7 +85,18 @@ def main():
         return
 
     if not args.filenames:
+        # Check if files have been provided
         print('Error: The following arguments are required: FILE')
+        return
+
+    # Check if the Ollama model is available
+    if args.tiny:
+        llm_model = CONFIG['ollama']['tiny']['model']
+    else:
+        llm_model = CONFIG['ollama']['model']
+
+    if not is_model_available(llm_model):
+        print(f'Error: The {llm_model} model is not available, please pull it with `ollama pull {llm_model}`')
         return
 
     all_start_time = time.time()
@@ -207,6 +219,17 @@ def summarize(transcript, tiny):
 
     return summary
 
+
+def is_model_available(model: str) -> bool:
+    # Fetch local models
+    models = ollama.list()['models']
+
+    # Extract just the names into a list
+    names = [m['model'] for m in models]
+
+    # Check for exact match or with 'latest' suffix
+    return model in names or f'{model}:latest' in names
+    
 
 def write_pdf(pdf_file, md_content):
     # Parse markdown
