@@ -50,22 +50,26 @@ def main():
                         help='check if CUDA is available')
     parser.add_argument('-l', '--language', metavar='LANG',
                         help='set the language of the audio')
+    parser.add_argument('-o', '--ollama-model', metavar='MODEL',
+                        help='set the Ollama model for summarization')
     parser.add_argument('-r', '--reset-config', action='store_true',
                         help='reset configuration file to default')
     parser.add_argument('-t', '--transcript-only', action='store_true',
                         help="transcript only, don't generate a summary")
     parser.add_argument('-T', '--tiny', action='store_true',
-                        help='use tiny models for testing')
+                        help='use tiny Whisper and Ollama models for testing')
     parser.add_argument('-v', '--version', action='version', 
                         version=f'%(prog)s {__version__}')
-    parser.add_argument('-w', '--filter-warnings', action='store_true',
+    parser.add_argument('-w', '--whisper-model', metavar='MODEL',
+                        help='set the Whisper model for transcription')
+    parser.add_argument('-W', '--filter-warnings', action='store_true',
                         help='suppress warnings from PyTorch')
     args = parser.parse_args()
 
     try:
         load_config(args.reset_config)
     except FileNotFoundError as e:
-        print(f'Error: Failed to load config: {e}')
+        print(f'Error: Failed to load configuration file: {e}')
         return
 
     if args.filter_warnings:
@@ -89,14 +93,36 @@ def main():
         print('Error: The following arguments are required: FILE')
         return
 
-    # Check if the Ollama model is available
-    if args.tiny:
-        llm_model = CONFIG['ollama']['tiny']['model']
-    else:
-        llm_model = CONFIG['ollama']['model']
+    # Get default configuration
+    whisper_language = CONFIG['whisper']['language']
+    whisper_model = CONFIG['whisper']['model_multilang']
+    ollama_model = CONFIG['ollama']['model']
+    ollama_prompt = CONFIG['ollama']['prompt']
 
-    if not is_model_available(llm_model):
-        print(f'Error: The {llm_model} model is not available, please pull it with `ollama pull {llm_model}`')
+    # Set language
+    if args.language:
+        whisper_language = args.language
+
+    # Set Whisper model
+    if args.whisper_model:
+        whisper_model = args.whisper_model
+    elif args.tiny:
+        whisper_model = CONFIG['whisper']['tiny']['model']
+    elif whisper_language == 'en':
+        whisper_model = CONFIG['whisper']['model_english']
+
+    # Set Ollama model and prompt
+    if args.ollama_model:
+        ollama_model = args.ollama_model
+    elif args.tiny:
+        ollama_model = CONFIG['ollama']['tiny']['model']
+        ollama_prompt = CONFIG['ollama']['tiny']['prompt']
+
+    # Check if Ollama model available
+    if not is_model_available(ollama_model):
+        # We could pull it automatically, but unlike with Whisper no progress
+        # bar would be displayed.
+        print(f'Error: The {ollama_model} model is not available, please pull it with `ollama pull {ollama_model}`')
         return
 
     all_start_time = time.time()
@@ -134,7 +160,7 @@ def main():
         if next_step == 'txt':
             # Assume audio file, attempt transcription
             txt_file = replace_extension(filename, 'txt')
-            transcript_text = transcribe(filename, args.language, args.tiny)
+            transcript_text = transcribe(filename, whisper_model, whisper_language)
             write_file(txt_file, transcript_text)
             if args.transcript_only:
                 next_step = 'none'
@@ -147,7 +173,7 @@ def main():
             if not transcript_text:
                 # We are starting with a 'txt' file
                 transcript_text = read_file(filename)
-            summary_text = summarize(transcript_text, args.tiny)
+            summary_text = summarize(transcript_text, ollama_model, ollama_prompt)
             write_file(md_file, summary_text)
             next_step = 'pdf'
 
@@ -168,24 +194,12 @@ def main():
         print(f'All files processed in {format_time(all_exec_time)}')
 
 
-def transcribe(filename, language, tiny):
-    # Transcribe with Whisper
-    if not language:
-        # No language argument provided, so use config file default
-        language = CONFIG['whisper']['default_language']
-
-    if tiny:
-        whisper_model = CONFIG['whisper']['tiny']['model']
-    elif language == 'en':
-        whisper_model = CONFIG['whisper']['model_english']
-    else:
-        whisper_model = CONFIG['whisper']['model_multilang']
-
-    # It isn't necessary to import torch and explicitely load the model to CUDA.
-    # Whisper library handles device detection automatically.
-    model = whisper.load_model(whisper_model)
-    #print(f'Transcribing with {whisper_model} model on {model.device} device')
-    print(f'Transcribing with {whisper_model} model')
+def transcribe(filename, model_name, language):
+    # Transcribe with Whisper. It isn't necessary to explicitely load the model
+    # to CUDA. Whisper handles device detection automatically.
+    model = whisper.load_model(model_name)
+    #print(f'Transcribing with {model_name} model on {model.device} device')
+    print(f'Transcribing with {model_name} model')
     start_time = time.time()
     result = model.transcribe(filename, language=language)
     exec_time = time.time() - start_time
@@ -194,22 +208,15 @@ def transcribe(filename, language, tiny):
     return result['text']
 
 
-def summarize(transcript, tiny):
+def summarize(transcript, model, prompt):
     # Summarize with Ollama
-    if tiny:
-        llm_model = CONFIG['ollama']['tiny']['model']
-        llm_prompt = CONFIG['ollama']['tiny']['prompt']
-    else:
-        llm_model = CONFIG['ollama']['model']
-        llm_prompt = CONFIG['ollama']['prompt']
-
-    print(f'Summarizing with {llm_model} model')
+    print(f'Summarizing with {model} model')
     start_time = time.time()
 
-    response = ollama.chat(model=llm_model, messages=[
+    response = ollama.chat(model=model, messages=[
       {
         'role': 'user',
-        'content': f'{llm_prompt} {transcript}',
+        'content': f'{prompt} {transcript}',
       },
     ])
 
