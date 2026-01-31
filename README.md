@@ -18,7 +18,7 @@ I recently upgraded to an [ASUS Ascent GX10][gx10-link], a lower-cost alternativ
 Locsum requires the following external libraries:
 
 - **[markdown-it][markdown-link]:** Used for Markdown to HTML conversion
-- **[ollama][ollama-link]:** Used for text summarization
+- **[ollama][ollama-github-link]:** Used for text summarization
 - **[weasyprint][weasyprint-link]:** Used for HTML to PDF conversion
 - **[whisper][whisper-link]:** Used for audio transcription
 
@@ -26,11 +26,10 @@ These libraries and their sub-dependencies will be installed automatically when 
 
 ## Installation
 
-First ensure `ffmpeg` is installed on your system, as it is required by Whisper.
+### Prerequisites
 
-### Ollama Installation
-
-Coming soon.
+- Ensure `ffmpeg` is installed on your system
+- Install [Ollama][ollama-download-link] and pull a [model][ollama-search-link] to use for the summarization (e.g. `ollama pull glm-4.7-flash`)
 
 ### Locsum Installation with `pipx`
 
@@ -200,7 +199,9 @@ Thanks to the creators and contributors of all the powerful libraries used in th
 [license-badge]: https://img.shields.io/pypi/l/locsum.svg
 [license-link]: https://github.com/monsieurlinux/locsum/blob/main/LICENSE
 [markdown-link]: https://github.com/executablebooks/markdown-it-py
-[ollama-link]: https://github.com/ollama/ollama-python
+[ollama-download-link]: https://ollama.com/download
+[ollama-github-link]: https://github.com/ollama/ollama-python
+[ollama-search-link]: https://ollama.com/search
 [pipx-link]: https://github.com/pypa/pipx
 [proton-link]: https://protonvpn.com/
 [pypi-releases]: https://pypi.org/project/locsum/#history
