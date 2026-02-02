@@ -163,6 +163,7 @@ For a truly air-gapped system and to eliminate electromagnetic radiation, here i
 
   ```sh
   sudo systemctl disable --now bluetooth
+  sudo systemctl mask bluetooth
   sudo rfkill block bluetooth
   ```
 
@@ -170,17 +171,39 @@ For a truly air-gapped system and to eliminate electromagnetic radiation, here i
 
   ```sh
   sudo systemctl disable --now wpa_supplicant
+  sudo systemctl mask wpa_supplicant
   sudo rfkill block wifi
-  nmcli radio wifi off
+  nmcli radio wifi off  # Probably redundant, but just in case
   ```
 
-- **Check**
+- **Reboot and check**
 
   ```sh
-  sudo systemctl is-enabled bluetooth
-  sudo systemctl is-enabled wpa_supplicant
+  sudo systemctl status bluetooth
+  sudo systemctl status wpa_supplicant
   sudo rfkill list
-  nmcli general status
+  nmcli general status  # Probably redundant (only the WIFI* columns matter)
+  ```
+
+In order to make sure the wifi antenna won't be used at all, blacklist the wifi kernel module:
+
+- **Identify the module**
+
+  ```sh
+  lspci -k  #  Find the wireless controller module (it's `mt7925e` for my GX10)
+  ```
+
+- **Blacklist the module** 
+
+  ```sh
+  echo "blacklist mt7925e" | sudo tee /etc/modprobe.d/blacklist-wifi.conf
+  sudo update-initramfs -u  # Ensure the blacklist takes effect on boot
+  ```
+
+- **Reboot and check** 
+
+  ```sh
+  lsmod | grep mt7925e  # This should return nothing
   ```
 
 ## License
