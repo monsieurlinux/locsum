@@ -157,7 +157,7 @@ First update your system with `sudo apt update && sudo apt upgrade`. If the kern
 
 ## Radio Deactivation
 
-For a truly air-gapped system and to eliminate electromagnetic radiation, here is how to disable the antennas:
+For a truly air-gapped system and to eliminate electromagnetic radiation, use the following methods to disable antennas:
 
 - **Disable Bluetooth**
 
@@ -173,7 +173,7 @@ For a truly air-gapped system and to eliminate electromagnetic radiation, here i
   sudo systemctl disable --now wpa_supplicant
   sudo systemctl mask wpa_supplicant
   sudo rfkill block wifi
-  nmcli radio wifi off  # Probably redundant, but just in case
+  nmcli radio wifi off  # Redundant, but just in case
   ```
 
 - **Reboot and check**
@@ -182,28 +182,30 @@ For a truly air-gapped system and to eliminate electromagnetic radiation, here i
   sudo systemctl status bluetooth
   sudo systemctl status wpa_supplicant
   sudo rfkill list
-  nmcli general status  # Probably redundant (only the WIFI* columns matter)
   ```
 
-In order to make sure the wifi antenna won't be used at all, blacklist the wifi kernel module:
+###  Kernel-Level Deactivation
+
+Even after disabling services, the firmware might still attempt background scans, emitting bursts of RF energy. To completely silence the device, you must prevent the kernel module from loading.
 
 - **Identify the module**
 
   ```sh
-  lspci -k  #  Find the wireless controller module (it's `mt7925e` for my GX10)
+  lspci -k  #  Look for the wireless controller and find the module name (e.g. mt7925e)
   ```
 
-- **Blacklist the module** 
+- **Blacklist the module**
 
   ```sh
-  echo "blacklist mt7925e" | sudo tee /etc/modprobe.d/blacklist-wifi.conf
-  sudo update-initramfs -u  # Ensure the blacklist takes effect on boot
+  # Replace [WIRELESS_MODULE] with the name found above (e.g. mt7925e)
+  echo "blacklist [WIRELESS_MODULE]" | sudo tee /etc/modprobe.d/blacklist-wifi.conf
+  sudo update-initramfs -u
   ```
 
-- **Reboot and check** 
+- **Reboot and check**
 
   ```sh
-  lsmod | grep mt7925e  # This should return nothing
+  lsmod | grep [WIRELESS_MODULE]  # Should return nothing
   ```
 
 ## License
