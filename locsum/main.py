@@ -208,21 +208,93 @@ def transcribe(filename, model_name, language):
     return result['text']
 
 
+"""                   median   % of all   67% of   75% of   minimum
+           txt  md    ratio     files     ratio    ratio    target
+ 0-25 kb   18   2.9   14.9%       33       10.0     11.2      10
+25-50 kb   38   3.3    8.4%       41        5.6      6.3       6
+50-75 kb   63   4.0    5.3%       13        3.5      4.0       4
+  75+ kb  119   6.3    5.6%       13        3.8      4.2       4
+Overall    45   3.9    9.0%      100        6.0      6.8       7
+MA         87   5.5    6.5%                 4.4      4.9       5
+
+3 pages pdf ~ 9k chars, so ~ 3k chars per page
+"""
+
+""" venice:
+Could you tell me more about that in detail?
+"""
+
+""" qwen3-coder:
+Please provide a comprehensive summary that is at least 1500 characters long.
+Include all major points, key details, and important information from the transcript.
+The summary should be detailed and well-structured.
+
+Please provide an e xtremely detailed summary that is at least 1500 characters long.
+You must include ALL key points, important details, and significant information from the transcript.
+The summary should be comprehensive, well-structured, and detailed.
+"""
+
 def summarize(transcript, model, prompt):
     # Summarize with Ollama
     print(f'Summarizing with {model} model')
     start_time = time.time()
 
-    response = ollama.chat(model=model, messages=[
-      {
-        'role': 'user',
-        'content': f'{prompt} {transcript}',
-      },
-    ])
+    # 1. Setup your input and the initial context
+    # Initialize the conversation list
+    messages = [
+        {
+            "role": "system", 
+            "content": "You are a helpful assistant specializing in detailed summaries."
+        }
+    ]
 
+    # 2. First Request: Summarize the text
+    # We send the system prompt + the text to summarize
+    #messages.append({"role": "user", "content": f"Summarize this text: {transcript}"})
+    messages.append({"role": "user", "content": f"{prompt} {transcript}"})
+
+    response = ollama.chat(model=model, messages=messages)
+    summary = response['message']['content']
     exec_time = time.time() - start_time
-    logger.debug(f'Done in {format_time(exec_time)}')
-    summary = response['message']['content']  # TODO: use response.message.content?
+    ratio_pct = len(summary) / len(transcript) * 100
+    logger.debug(f'Done in {format_time(exec_time)} ({ratio_pct:.1f}% ratio)')
+
+    # Add the first response to history so the model remembers what it wrote
+    messages.append({"role": "assistant", "content": summary})
+    
+    # TODO: Make target ratios configurable
+    transcript_size = len(transcript)
+    
+    if transcript_size < 25000:
+        target_ratio = 10
+    elif transcript_size < 50000:
+        target_ratio = 6
+    else:
+        target_ratio = 4
+
+    # 3. Loop: Check length and request details if too short
+    # TODO: Maybe replace 'if' by 'while', but put a limit on the number of iterations
+    if ratio_pct < target_ratio:
+        print(f"Summary is too short ({ratio_pct:.1f}% ratio for {target_ratio}% target), asking for more details")
+        start_time = time.time()
+        
+        # Append a new user instruction
+        # IMPORTANT: We also append the previous 'assistant' message 
+        # (the current summary) so the model has context.
+        messages.append({
+            "role": "user", 
+            "content": "The summary I just provided was too short. Please expand on the key points and provide more detail without changing the original meaning."
+        })
+        
+        # Get the new response
+        response = ollama.chat(model=model, messages=messages)
+        summary = response['message']['content']
+        exec_time = time.time() - start_time
+        ratio_pct = len(summary) / len(transcript) * 100
+        logger.debug(f'Done in {format_time(exec_time)} ({ratio_pct:.1f}% ratio)')
+        
+        # Append this new response to history for the next iteration
+        messages.append({"role": "assistant", "content": summary})
 
     return summary
 
