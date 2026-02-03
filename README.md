@@ -126,7 +126,18 @@ locsum [arguments] FILE [FILE ...]
 
 ### Command-Line Arguments
 
-Coming soon.
+| Argument            | Short Flag | Description                                     |
+| ------------------- | ---------- | ----------------------------------------------- |
+| `--help`            | `-h`       | Show help message                               |
+| `--check-cuda`      | `-c`       | Check if CUDA is available                      |
+| `--language`        | `-l`       | Set the language of the audio                   |
+| `--ollama-model`    | `-o`       | Set the Ollama model for summarization          |
+| `--reset-config`    | `-r`       | Reset configuration file to default             |
+| `--transcript-only` | `-t`       | Transcript only, don't generate a summary       |
+| `--tiny`            | `-T`       | Use tiny Whisper and Ollama models for testing  |
+| `--version`         | `-v`       | Show program's version number and exit          |
+| `--whisper-model`   | `-w`       | Set the Whisper model for transcription         |
+| `--filter-warnings` | `-W`       | Suppress warnings from PyTorch                  |
 
 ## Configuration
 
