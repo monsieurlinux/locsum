@@ -133,7 +133,7 @@ locsum [arguments] FILE [FILE ...]
 | `--language`        | `-l`       | Set the language of the audio                   |
 | `--ollama-model`    | `-o`       | Set the Ollama model for summarization          |
 | `--reset-config`    | `-r`       | Reset configuration file to default             |
-| `--transcript-only` | `-t`       | Transcript only, don't generate a summary       |
+| `--transcribe-only` | `-t`       | Transcribe only, don't generate a summary       |
 | `--tiny`            | `-T`       | Use tiny Whisper and Ollama models for testing  |
 | `--version`         | `-v`       | Show program's version number and exit          |
 | `--whisper-model`   | `-w`       | Set the Whisper model for transcription         |
@@ -168,7 +168,7 @@ First update your system with `sudo apt update && sudo apt upgrade`. If the kern
 
 ## Radio Deactivation
 
-For a truly air-gapped system and to eliminate electromagnetic radiation, use the following methods to disable antennas:
+For a truly air-gapped system and to eliminate radiofrequency radiation, use the following methods to disable antennas:
 
 - **Disable Bluetooth**
 

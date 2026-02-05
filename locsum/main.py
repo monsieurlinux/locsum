@@ -54,8 +54,8 @@ def main():
                         help='set the Ollama model for summarization')
     parser.add_argument('-r', '--reset-config', action='store_true',
                         help='reset configuration file to default')
-    parser.add_argument('-t', '--transcript-only', action='store_true',
-                        help="transcript only, don't generate a summary")
+    parser.add_argument('-t', '--transcribe-only', action='store_true',
+                        help="transcribe only, don't generate a summary")
     parser.add_argument('-T', '--tiny', action='store_true',
                         help='use tiny Whisper and Ollama models for testing')
     parser.add_argument('-v', '--version', action='version', 
@@ -162,7 +162,7 @@ def main():
             txt_file = replace_extension(filename, 'txt')
             transcript_text = transcribe(filename, whisper_model, whisper_language)
             write_file(txt_file, transcript_text)
-            if args.transcript_only:
+            if args.transcribe_only:
                 next_step = 'none'
             else:
                 next_step = 'md'
@@ -208,23 +208,15 @@ def transcribe(filename, model_name, language):
     return result['text']
 
 
-"""                   median   % of all   67% of   75% of   minimum
-           txt  md    ratio     files     ratio    ratio    target
- 0-25 kb   18   2.9   14.9%       33       10.0     11.2      10
-25-50 kb   38   3.3    8.4%       41        5.6      6.3       6
-50-75 kb   63   4.0    5.3%       13        3.5      4.0       4
-  75+ kb  119   6.3    5.6%       13        3.8      4.2       4
-Overall    45   3.9    9.0%      100        6.0      6.8       7
-MA         87   5.5    6.5%                 4.4      4.9       5
-
+"""
 3 pages pdf ~ 9k chars, so ~ 3k chars per page
-"""
 
-""" venice:
+Make sure your summary is at least x% the size of the transcript.
+
+venice:
 Could you tell me more about that in detail?
-"""
 
-""" qwen3-coder:
+qwen3-coder:
 Please provide a comprehensive summary that is at least 1500 characters long.
 Include all major points, key details, and important information from the transcript.
 The summary should be detailed and well-structured.
