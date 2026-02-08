@@ -152,7 +152,9 @@ def main():
             print(f'Skipping {filename} (not a file)')
             continue
 
-        print(f'Processing {BLUE}{filename}{RESET}')
+        processing = 'Processing '
+        truncated = truncate_to_terminal(filename, padding = processing)
+        print(f'{processing}{BLUE}{truncated}{RESET}')
         num_files += 1
         start_time = time.time()
         extension = get_file_extension(filename)
@@ -248,7 +250,7 @@ def summarize(transcript, model, prompt):
 
     # First Request: Summarize the text
     # We send the system prompt + the text to summarize
-    messages.append({"role": "user", "content": f"{prompt} {transcript}"})
+    messages.append({"role": "user", "content": f"{prompt}\n\n{transcript}"})
 
     response = ollama.chat(model=model, messages=messages)
     summary = response['message']['content']
@@ -436,6 +438,20 @@ def get_config_dir(app_name):
     config_dir.mkdir(parents=True, exist_ok=True)
     
     return config_dir
+
+
+def truncate_to_terminal(text, padding=None):
+    width = shutil.get_terminal_size().columns - 1
+
+    if padding is not None:
+        width -= len(padding)
+    
+    if len(text) <= width:
+        return text
+    else:
+        ellipsis = "..."
+        truncated = text[:width - len(ellipsis)]
+        return truncated + ellipsis
 
 
 def setup_logging(level=logging.DEBUG):
