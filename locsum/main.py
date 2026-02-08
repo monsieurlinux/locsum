@@ -448,12 +448,13 @@ def get_config_dir(app_name):
     return config_dir
 
 
-def truncate_to_terminal(text, padding=None):
-    width = shutil.get_terminal_size().columns - 1
+def truncate_to_terminal(text, padding=''):
+    width = shutil.get_terminal_size().columns - len(padding)
 
-    if padding is not None:
-        width -= len(padding)
-    
+    # Make space for full-width unicode characters
+    str_width = sum(2 if ord(c) > 127 else 1 for c in text)
+    width -= (str_width - len(text))
+
     if len(text) <= width:
         return text
     else:
