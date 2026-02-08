@@ -102,7 +102,7 @@ Uninstall PyTorch and reinstall the right CUDA build (cu130 in my case).
 
 **3. Verify installation**
 
-Run `locsum -c` to check that CUDA is available (available after release 0.2.0).
+Run `locsum -c` to check that CUDA is available.
 
   ```
   PyTorch 2.10.0+cu130
@@ -131,6 +131,7 @@ locsum [arguments] FILE [FILE ...]
 | `--help`            | `-h`       | Show help message                               |
 | `--check-cuda`      | `-c`       | Check if CUDA is available                      |
 | `--language`        | `-l`       | Set the language of the audio                   |
+| `--no-colors`       | `-n`       | Disable color output                            |
 | `--ollama-model`    | `-o`       | Set the Ollama model for summarization          |
 | `--reset-config`    | `-r`       | Reset configuration file to default             |
 | `--transcribe-only` | `-t`       | Transcribe only, don't generate a summary       |
@@ -197,12 +198,12 @@ For a truly air-gapped system and to eliminate radiofrequency radiation, use the
 
 ###  Kernel-Level Deactivation
 
-Even after disabling services, the firmware might still attempt background scans, emitting bursts of RF energy. To completely silence the device, you must prevent the kernel module from loading.
+Even after disabling services, the firmware might still attempt background scans, emitting bursts of radiofrequency energy. To completely silence the device, you must prevent the kernel module from loading:
 
 - **Identify the module**
 
   ```sh
-  lspci -k  #  Look for the wireless controller and find the module name (e.g. mt7925e)
+  lspci -k  # Look for the wireless controller and find the module name (e.g. mt7925e)
   ```
 
 - **Blacklist the module**

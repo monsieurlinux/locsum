@@ -37,15 +37,15 @@ from locsum import __version__
 
 CONFIG = {}
 
-BLACK   = "\033[30m"
-RED     = "\033[31m"
-GREEN   = "\033[32m"
-YELLOW  = "\033[33m"
-BLUE    = "\033[34m"
-MAGENTA = "\033[35m"
-CYAN    = "\033[36m"
-WHITE   = "\033[37m"
-RESET   = "\033[0m"
+BLACK   = '\033[30m'
+RED     = '\033[31m'
+GREEN   = '\033[32m'
+YELLOW  = '\033[33m'
+BLUE    = '\033[34m'
+MAGENTA = '\033[35m'
+CYAN    = '\033[36m'
+WHITE   = '\033[37m'
+RESET   = '\033[0m'
 
 # Get a logger for this script
 logger = logging.getLogger(__name__)
@@ -60,6 +60,8 @@ def main():
                         help='check if CUDA is available')
     parser.add_argument('-l', '--language', metavar='LANG',
                         help='set the language of the audio')
+    parser.add_argument('-n', '--no-colors', action='store_true',
+                        help="disable color output")
     parser.add_argument('-o', '--ollama-model', metavar='MODEL',
                         help='set the Ollama model for summarization')
     parser.add_argument('-r', '--reset-config', action='store_true',
@@ -75,6 +77,10 @@ def main():
     parser.add_argument('-W', '--filter-warnings', action='store_true',
                         help='suppress warnings from PyTorch')
     args = parser.parse_args()
+
+    if args.no_colors:
+        global BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET
+        BLACK = RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = WHITE = RESET = ''
 
     try:
         load_config(args.reset_config)
@@ -211,7 +217,7 @@ def transcribe(filename, model_name, language):
     # to CUDA. Whisper handles device detection automatically.
     model = whisper.load_model(model_name)
     #print(f'Transcribing with {model_name} model on {model.device} device')
-    print(f'Transcribing with {model_name} model')
+    print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
     start_time = time.time()
     result = model.transcribe(filename, language=language)
     exec_time = time.time() - start_time
@@ -236,7 +242,7 @@ The summary should be comprehensive, well-structured, and detailed.
 
 def summarize(transcript, model, prompt):
     # Summarize with Ollama
-    print(f'Summarizing with {model} model')
+    print(f'Summarizing with {YELLOW}{model}{RESET} model')
     start_time = time.time()
 
     # Setup your input and the initial context
@@ -274,7 +280,7 @@ def summarize(transcript, model, prompt):
     # Loop: Check length and request details if too short
     # TODO: Maybe replace 'if' by 'while', but put a limit on the number of iterations
     if ratio_pct < target_ratio:
-        print(f"Summary is too short ({YELLOW}{ratio_pct:.1f}%{RESET} ratio for {GREEN}{target_ratio}%{RESET} target), asking for more details")
+        print(f"Summary is too short ({RED}{ratio_pct:.1f}%{RESET} ratio for {GREEN}{target_ratio}%{RESET} target), asking for more details")
         start_time = time.time()
         
         # Append a new user instruction
@@ -282,9 +288,8 @@ def summarize(transcript, model, prompt):
         # (the current summary) so the model has context.
         messages.append({
             "role": "user", 
-            "content": "The summary I just provided was too short. Please expand on the key points and provide more detail without changing the original meaning."
             #"content": "Your summary is too short. Could you tell me more about that in detail?"
-            #"content": "Could you tell me more about that in detail?"
+            "content": "Could you tell me more about that in detail?"
         })
         
         # Get the new response
@@ -293,6 +298,9 @@ def summarize(transcript, model, prompt):
         exec_time = time.time() - start_time
         ratio_pct = len(summary) / len(transcript) * 100
         logger.debug(f'Done in {format_time(exec_time)} ({ratio_pct:.1f}% ratio)')
+        
+        color = RED if ratio_pct < target_ratio else GREEN
+        print(f"New summary has a {color}{ratio_pct:.1f}%{RESET} ratio")
         
         # Append this new response to history for the next iteration
         messages.append({"role": "assistant", "content": summary})
