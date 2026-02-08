@@ -37,6 +37,16 @@ from locsum import __version__
 
 CONFIG = {}
 
+BLACK   = "\033[30m"
+RED     = "\033[31m"
+GREEN   = "\033[32m"
+YELLOW  = "\033[33m"
+BLUE    = "\033[34m"
+MAGENTA = "\033[35m"
+CYAN    = "\033[36m"
+WHITE   = "\033[37m"
+RESET   = "\033[0m"
+
 # Get a logger for this script
 logger = logging.getLogger(__name__)
 
@@ -69,7 +79,7 @@ def main():
     try:
         load_config(args.reset_config)
     except FileNotFoundError as e:
-        print(f'Error: Failed to load configuration file: {e}')
+        print(f'{RED}Error:{RESET} Failed to load configuration file: {e}')
         return
 
     if args.filter_warnings:
@@ -90,7 +100,7 @@ def main():
 
     if not args.filenames:
         # Check if files have been provided
-        print('Error: The following arguments are required: FILE')
+        print(f'{RED}Error:{RESET} The following arguments are required: FILE')
         return
 
     # Get default configuration
@@ -122,7 +132,7 @@ def main():
     if not is_model_available(ollama_model):
         # We could pull it automatically, but unlike with Whisper no progress
         # bar would be displayed.
-        print(f'Error: The {ollama_model} model is not available, please pull it with `ollama pull {ollama_model}`')
+        print(f'{RED}Error:{RESET} The {ollama_model} model is not available, please pull it with `ollama pull {ollama_model}`')
         return
 
     all_start_time = time.time()
@@ -142,7 +152,7 @@ def main():
             print(f'Skipping {filename} (not a file)')
             continue
 
-        print(f'Processing {filename}')
+        print(f'Processing {BLUE}{filename}{RESET}')
         num_files += 1
         start_time = time.time()
         extension = get_file_extension(filename)
@@ -187,11 +197,11 @@ def main():
             write_pdf(pdf_file, summary_text)
 
         exec_time = time.time() - start_time
-        print(f'File processed in {format_time(exec_time)}')
+        print(f'File processed in {WHITE}{format_time(exec_time)}{RESET}')
 
     if num_files > 1:
         all_exec_time = time.time() - all_start_time
-        print(f'All files processed in {format_time(all_exec_time)}')
+        print(f'All files processed in {GREEN}{format_time(all_exec_time)}{RESET}')
 
 
 def transcribe(filename, model_name, language):
@@ -209,10 +219,6 @@ def transcribe(filename, model_name, language):
 
 
 """
-3 pages pdf ~ 9k chars, so ~ 3k chars per page
-
-Make sure your summary is at least x% the size of the transcript.
-
 venice:
 Could you tell me more about that in detail?
 
@@ -231,7 +237,7 @@ def summarize(transcript, model, prompt):
     print(f'Summarizing with {model} model')
     start_time = time.time()
 
-    # 1. Setup your input and the initial context
+    # Setup your input and the initial context
     # Initialize the conversation list
     messages = [
         {
@@ -240,9 +246,8 @@ def summarize(transcript, model, prompt):
         }
     ]
 
-    # 2. First Request: Summarize the text
+    # First Request: Summarize the text
     # We send the system prompt + the text to summarize
-    #messages.append({"role": "user", "content": f"Summarize this text: {transcript}"})
     messages.append({"role": "user", "content": f"{prompt} {transcript}"})
 
     response = ollama.chat(model=model, messages=messages)
@@ -264,10 +269,10 @@ def summarize(transcript, model, prompt):
     else:
         target_ratio = 4
 
-    # 3. Loop: Check length and request details if too short
+    # Loop: Check length and request details if too short
     # TODO: Maybe replace 'if' by 'while', but put a limit on the number of iterations
     if ratio_pct < target_ratio:
-        print(f"Summary is too short ({ratio_pct:.1f}% ratio for {target_ratio}% target), asking for more details")
+        print(f"Summary is too short ({YELLOW}{ratio_pct:.1f}%{RESET} ratio for {GREEN}{target_ratio}%{RESET} target), asking for more details")
         start_time = time.time()
         
         # Append a new user instruction
@@ -276,6 +281,8 @@ def summarize(transcript, model, prompt):
         messages.append({
             "role": "user", 
             "content": "The summary I just provided was too short. Please expand on the key points and provide more detail without changing the original meaning."
+            #"content": "Your summary is too short. Could you tell me more about that in detail?"
+            #"content": "Could you tell me more about that in detail?"
         })
         
         # Get the new response
@@ -459,6 +466,6 @@ if __name__ == '__main__':
         logging.getLogger(name).setLevel(logging.WARNING)
 
     # Configure this script's logger
-    logger.setLevel(logging.DEBUG)
+    #logger.setLevel(logging.DEBUG)
 
     main()
