@@ -11,6 +11,7 @@ import argparse
 import glob
 import logging
 import os
+#import pymupdf
 import re
 import shutil
 import sys
@@ -202,7 +203,20 @@ def main():
             if not summary_text:
                 # We are starting with a 'md' file
                 summary_text = read_file(filename)
-            write_pdf(pdf_file, summary_text)
+            pdf_bytes = write_pdf(pdf_file, summary_text)
+
+            """
+            # Count chars on last page
+            with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
+                last_page_len = len(doc.load_page(len(doc) - 1).get_text())
+            
+            if last_page_len < 1250:
+                # TODO: Move threshold to configuration file
+                print(f'last page len is less than 1250 ({last_page_len})')
+                condense_pct = round(last_page_len / len(summary_text) * 100)
+                summary_text = condense(summary_text, ollama_model)
+                write_pdf(add_suffix(pdf_file, '-condensed'), summary_text)
+            """
 
         exec_time = time.time() - start_time
         print(f'File processed in {WHITE}{format_time(exec_time)}{RESET}')
@@ -225,20 +239,6 @@ def transcribe(filename, model_name, language):
 
     return result['text']
 
-
-"""
-venice:
-Could you tell me more about that in detail?
-
-qwen3-coder:
-Please provide a comprehensive summary that is at least 1500 characters long.
-Include all major points, key details, and important information from the transcript.
-The summary should be detailed and well-structured.
-
-Please provide an e xtremely detailed summary that is at least 1500 characters long.
-You must include ALL key points, important details, and significant information from the transcript.
-The summary should be comprehensive, well-structured, and detailed.
-"""
 
 def summarize(transcript, model, prompt):
     # Summarize with Ollama
@@ -308,6 +308,46 @@ def summarize(transcript, model, prompt):
     return summary
 
 
+"""
+- Leave the shorter paragraphs **as is**.
+- When rephrasing a paragraph, aim for a 15% reduction, no more.
+"""
+def condense(summary, model):
+    # Condense with Ollama
+    print(f'Condensing to fit page with {YELLOW}{model}{RESET} model')
+    start_time = time.time()
+
+    messages = [
+        {
+            "role": "system", 
+            "content": """
+You are an expert editor specializing in **slight** reduction of text length.
+
+**Rules**:
+- Remove the introduction, keep only the informative sections.
+- Preserve the core meaning, key facts, and logical flow.  
+- Do **not** omit critical context, nuanced claims, or proper nouns.  
+- Prioritize removing redundancy, passive voice, filler phrases, and verbose explanations—**not** substance.  
+- Keep the original structure of the text, including headers and bullet points.
+- Rephrase text **slightly**, but don't overdo it.
+- Use abbreviations when it makes sense, but don't overdo it.
+- Output **only** the condensed text (no explanations).
+"""
+        }
+    ]
+
+    prompt = f'Original text:'
+    messages.append({"role": "user", "content": f"{prompt}\n\n{summary}"})
+
+    response = ollama.chat(model=model, messages=messages)
+    condensed = response['message']['content']
+    exec_time = time.time() - start_time
+    reduction = round((len(summary) - len(condensed)) / len(summary) * 100)
+    logger.debug(f'Done in {format_time(exec_time)} (condensed by {reduction}%)')
+
+    return condensed
+
+
 def is_model_available(model: str) -> bool:
     # Fetch local models
     models = ollama.list()['models']
@@ -356,8 +396,10 @@ def write_pdf(pdf_file, md_content):
     </html>
     """
     
-    HTML(string=html).write_pdf(pdf_file)
+    pdf_bytes = HTML(string=html).write_pdf()
+    write_file(pdf_file, pdf_bytes, mode='wb')
     #logger.debug(f'Wrote to {pdf_file}')
+    return pdf_bytes
 
 
 def format_time(seconds):
@@ -366,8 +408,8 @@ def format_time(seconds):
     return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 
 
-def write_file(filename, content):
-    with open(filename, 'w') as file:
+def write_file(filename, content, mode='w'):
+    with open(filename, mode) as file:
         file.write(content)
     #logger.debug(f'Wrote to {filename}')
 
@@ -396,6 +438,11 @@ def get_file_stem(filename):
 def replace_extension(filename, extension = ''):
     p = Path(filename)
     return f'{p.parent}/{p.stem}.{extension}'
+
+
+def add_suffix(filename, suffix = ''):
+    p = Path(filename)
+    return f'{p.parent}/{p.stem}{suffix}{p.suffix}'
 
 
 def cleanup_filename(filename):
