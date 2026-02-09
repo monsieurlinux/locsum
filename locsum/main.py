@@ -213,11 +213,12 @@ def main():
             if last_page_len < 1250 and not args.no_compact:
                 # TODO: Move threshold to configuration file
                 # Regenerate the pdf with a more compact layout
-                print(f'Last page length is very short, using PDF compact layout')
+                logger.debug(f'Last page is very short, using PDF compact layout')
                 write_pdf(pdf_file, summary_text, 'compact.css')
 
         exec_time = time.time() - start_time
-        print(f'File processed in {WHITE}{format_time(exec_time)}{RESET}')
+        if exec_time > 5:
+            print(f'File processed in {WHITE}{format_time(exec_time)}{RESET}')
 
     if num_files > 1:
         all_exec_time = time.time() - all_start_time
@@ -236,6 +237,43 @@ def transcribe(filename, model_name, language):
     logger.debug(f'Done in {format_time(exec_time)}')
 
     return result['text']
+
+
+def test_model_speed(transcript_text, ollama_prompt):
+    runs = 10
+    times_q4km = []
+    times_q8_0 = []
+    times_bf16 = []
+
+    for i in range(runs):
+        model = 'glm-4.7-flash'
+        print(f'Run {i} with model {model}')
+        start = time.perf_counter()
+        summarize(transcript_text, model, ollama_prompt)
+        end = time.perf_counter()
+        times_q4km.append(end - start)
+
+        model = 'glm-4.7-flash:q8_0'
+        print(f'Run {i} with model {model}')
+        start = time.perf_counter()
+        summarize(transcript_text, model, ollama_prompt)
+        end = time.perf_counter()
+        times_q8_0.append(end - start)
+
+        model = 'glm-4.7-flash:bf16'
+        print(f'Run {i} with model {model}')
+        start = time.perf_counter()
+        summarize(transcript_text, model, ollama_prompt)
+        end = time.perf_counter()
+        times_bf16.append(end - start)
+
+        avg_q4km = sum(times_q4km) / len(times_q4km)
+        avg_q8_0 = sum(times_q8_0) / len(times_q8_0)
+        avg_bf16 = sum(times_bf16) / len(times_bf16)
+
+        print(f"Average time for q4km: {avg_q4km} seconds")  # 69.1 sec
+        print(f"Average time for q8_0: {avg_q8_0} seconds")  # 86.6 sec (+25%)
+        print(f"Average time for bf16: {avg_bf16} seconds")  # 132.4 sec (+92%)
 
 
 def summarize(transcript, model, prompt):
