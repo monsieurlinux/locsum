@@ -11,7 +11,7 @@ import argparse
 import glob
 import logging
 import os
-#import pymupdf
+import pymupdf
 import re
 import shutil
 import sys
@@ -63,6 +63,8 @@ def main():
                         help='set the language of the audio')
     parser.add_argument('-n', '--no-colors', action='store_true',
                         help="disable color output")
+    parser.add_argument('-N', '--no-compact', action='store_true',
+                        help="disable PDF compact layout")
     parser.add_argument('-o', '--ollama-model', metavar='MODEL',
                         help='set the Ollama model for summarization')
     parser.add_argument('-r', '--reset-config', action='store_true',
@@ -199,24 +201,20 @@ def main():
         if next_step == 'pdf':
             # Generate a pdf from the summary
             pdf_file = replace_extension(filename, 'pdf')
-            #pdf_file = cleanup_filename(pdf_file)
             if not summary_text:
                 # We are starting with a 'md' file
                 summary_text = read_file(filename)
-            pdf_bytes = write_pdf(pdf_file, summary_text)
+            pdf_bytes = write_pdf(pdf_file, summary_text, 'regular.css')
 
-            """
-            # Count chars on last page
+            # Count characters on last page
             with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
                 last_page_len = len(doc.load_page(len(doc) - 1).get_text())
             
-            if last_page_len < 1250:
+            if last_page_len < 1250 and not args.no_compact:
                 # TODO: Move threshold to configuration file
-                print(f'last page len is less than 1250 ({last_page_len})')
-                condense_pct = round(last_page_len / len(summary_text) * 100)
-                summary_text = condense(summary_text, ollama_model)
-                write_pdf(add_suffix(pdf_file, '-condensed'), summary_text)
-            """
+                # Regenerate the pdf with a more compact layout
+                print(f'Last page length is very short, using PDF compact layout')
+                write_pdf(pdf_file, summary_text, 'compact.css')
 
         exec_time = time.time() - start_time
         print(f'File processed in {WHITE}{format_time(exec_time)}{RESET}')
@@ -308,46 +306,6 @@ def summarize(transcript, model, prompt):
     return summary
 
 
-"""
-- Leave the shorter paragraphs **as is**.
-- When rephrasing a paragraph, aim for a 15% reduction, no more.
-"""
-def condense(summary, model):
-    # Condense with Ollama
-    print(f'Condensing to fit page with {YELLOW}{model}{RESET} model')
-    start_time = time.time()
-
-    messages = [
-        {
-            "role": "system", 
-            "content": """
-You are an expert editor specializing in **slight** reduction of text length.
-
-**Rules**:
-- Remove the introduction, keep only the informative sections.
-- Preserve the core meaning, key facts, and logical flow.  
-- Do **not** omit critical context, nuanced claims, or proper nouns.  
-- Prioritize removing redundancy, passive voice, filler phrases, and verbose explanations—**not** substance.  
-- Keep the original structure of the text, including headers and bullet points.
-- Rephrase text **slightly**, but don't overdo it.
-- Use abbreviations when it makes sense, but don't overdo it.
-- Output **only** the condensed text (no explanations).
-"""
-        }
-    ]
-
-    prompt = f'Original text:'
-    messages.append({"role": "user", "content": f"{prompt}\n\n{summary}"})
-
-    response = ollama.chat(model=model, messages=messages)
-    condensed = response['message']['content']
-    exec_time = time.time() - start_time
-    reduction = round((len(summary) - len(condensed)) / len(summary) * 100)
-    logger.debug(f'Done in {format_time(exec_time)} (condensed by {reduction}%)')
-
-    return condensed
-
-
 def is_model_available(model: str) -> bool:
     # Fetch local models
     models = ollama.list()['models']
@@ -359,7 +317,7 @@ def is_model_available(model: str) -> bool:
     return model in names or f'{model}:latest' in names
     
 
-def write_pdf(pdf_file, md_content):
+def write_pdf(pdf_file, md_content, css_file):
     # Parse markdown
     md = markdown_it.MarkdownIt()
     html_content = md.render(md_content)
@@ -367,7 +325,7 @@ def write_pdf(pdf_file, md_content):
     header = get_file_stem(pdf_file) + ' / ' + date
 
     # CSS styling
-    css = read_file(PROJECT_ROOT / 'locsum' / 'pdf.css')
+    css = read_file(PROJECT_ROOT / 'locsum' / css_file)
     
     # HTML code
     html = """
@@ -538,6 +496,6 @@ if __name__ == '__main__':
         logging.getLogger(name).setLevel(logging.WARNING)
 
     # Configure this script's logger
-    #logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.DEBUG)
 
     main()

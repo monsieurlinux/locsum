@@ -74,6 +74,8 @@ pydantic-core==2.41.5
     # via pydantic
 pydyf==0.12.1
     # via weasyprint
+pymupdf==1.26.7
+    # via locsum (pyproject.toml)
 pyphen==0.17.2
     # via weasyprint
 regex==2026.1.15

@@ -19,6 +19,7 @@ Locsum requires the following external libraries:
 
 - **[markdown-it][markdown-link]:** Used for Markdown to HTML conversion
 - **[ollama][ollama-github-link]:** Used for text summarization
+- **[PyMuPDF][pymupdf-link]:** Used for PDF analysis
 - **[weasyprint][weasyprint-link]:** Used for HTML to PDF conversion
 - **[whisper][whisper-link]:** Used for audio transcription
 
@@ -132,6 +133,7 @@ locsum [arguments] FILE [FILE ...]
 | `--check-cuda`      | `-c`       | Check if CUDA is available                      |
 | `--language`        | `-l`       | Set the language of the audio                   |
 | `--no-colors`       | `-n`       | Disable color output                            |
+| `--no-compact`      | `-N`       | Disable PDF compact layout                      |
 | `--ollama-model`    | `-o`       | Set the Ollama model for summarization          |
 | `--reset-config`    | `-r`       | Reset configuration file to default             |
 | `--transcribe-only` | `-t`       | Transcribe only, don't generate a summary       |
@@ -241,6 +243,7 @@ Thanks to the creators and contributors of all the powerful libraries used in th
 [ollama-search-link]: https://ollama.com/search
 [pipx-link]: https://github.com/pypa/pipx
 [proton-link]: https://protonvpn.com/
+[pymupdf-link]: https://github.com/pymupdf/PyMuPDF
 [pypi-releases]: https://pypi.org/project/locsum/#history
 [pypi-badge]: https://img.shields.io/pypi/v/locsum.svg
 [pypi-link]: https://pypi.org/project/locsum/
