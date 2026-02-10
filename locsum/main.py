@@ -145,6 +145,13 @@ def main():
         print(f'{RED}Error:{RESET} The {ollama_model} model is not available, please pull it with `ollama pull {ollama_model}`')
         return
 
+    # Get Ollama model's context length
+    ctx_len = get_context_length(ollama_model)
+    if ctx_len > 0:
+        logger.debug(f"Context length for {ollama_model} model: {ctx_len} tokens")
+    else:
+        print(f"{YELLOW}Warning:{RESET} Could not determine context length for {ollama_model} model")
+
     all_start_time = time.time()
     filenames = []
     num_files = 0
@@ -369,7 +376,7 @@ def summarize(transcript, model, prompt):
     return summary
 
 
-def is_model_available(model: str) -> bool:
+def is_model_available(model_name: str) -> bool:
     # Fetch local models
     models = ollama.list()['models']
 
@@ -377,8 +384,33 @@ def is_model_available(model: str) -> bool:
     names = [m['model'] for m in models]
 
     # Check for exact match or with 'latest' suffix
-    return model in names or f'{model}:latest' in names
-    
+    return model_name in names or f'{model_name}:latest' in names
+
+
+def get_context_length(model_name: str) -> int:
+    try:
+        modelinfo = ollama.show(model_name).get("modelinfo")
+
+        if not isinstance(modelinfo, dict):
+            logger.debug(f"'modelinfo' not found or not a dict for model '{model_name}'")
+            return 0
+
+        # Look for any key ending with '.context_length'
+        for key, value in modelinfo.items():
+            if key.endswith(".context_length"):
+                try:
+                    return int(value)
+                except (ValueError, TypeError):
+                    logger.debug(f"Context length value for key '{key}' is not an integer: {value}")
+                    continue
+
+        logger.debug(f"No '.context_length' key found in modelinfo for '{model_name}'")
+        return 0
+
+    except Exception as e:
+        logger.debug(f"Error fetching model info for '{model_name}': {e}")
+        return 0
+
 
 def write_pdf(pdf_file, md_content, css_file):
     # Parse markdown
