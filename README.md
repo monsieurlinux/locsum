@@ -133,7 +133,7 @@ locsum [arguments] FILE [FILE ...]
 | `--check-cuda`      | `-c`       | Check if CUDA is available                      |
 | `--language`        | `-l`       | Set the language of the audio                   |
 | `--no-colors`       | `-n`       | Disable color output                            |
-| `--no-compact`      | `-N`       | Disable PDF compact layout                      |
+| `--no-compact`      | `-N`       | Disable compact PDF layout                      |
 | `--ollama-model`    | `-o`       | Set the Ollama model for summarization          |
 | `--reset-config`    | `-r`       | Reset configuration file to default             |
 | `--transcribe-only` | `-t`       | Transcribe only, don't generate a summary       |

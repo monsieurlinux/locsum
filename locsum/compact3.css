@@ -1,0 +1,49 @@
+body {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 15px;
+    line-height: 1.0;
+    margin: 0 2em;
+    padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 600;
+    line-height: 1.0;
+    margin: 0.8em 0 0.4em 0;  /* top, right, bottom, left */
+    padding: 0;
+}
+
+h1 {
+    font-size: 1.4em;
+}
+
+h2 {
+    font-size: 1.0em;
+}
+
+h3 {
+    font-size: 0.9em;
+}
+
+h4, h5, h6 {
+    font-size: 0.8em;
+}
+
+code {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+p {
+    margin: 0.7em 0;  /* top and bottom */
+}
+
+ul, ol {
+    margin: 0;
+    padding: 0 0 0 1.5em;  /* left only */
+}
+
+li {
+    margin: 0.4em 0;  /* top and bottom */
+    padding: 0;
+}

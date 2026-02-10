@@ -65,7 +65,7 @@ def main():
     parser.add_argument('-n', '--no-colors', action='store_true',
                         help="disable color output")
     parser.add_argument('-N', '--no-compact', action='store_true',
-                        help="disable PDF compact layout")
+                        help="disable compact PDF layout")
     parser.add_argument('-o', '--ollama-model', metavar='MODEL',
                         help='set the Ollama model for summarization')
     parser.add_argument('-r', '--reset-config', action='store_true',
@@ -214,15 +214,21 @@ def main():
                 summary_text = read_file(filename)
             pdf_bytes = write_pdf(pdf_file, summary_text, 'regular.css')
 
-            # Count characters on last page
-            with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
-                last_page_len = len(doc.load_page(len(doc) - 1).get_text())
-            
-            if last_page_len < 1250 and not args.no_compact:
+            if not args.no_compact:
                 # TODO: Move threshold to configuration file
-                # Regenerate the pdf with a more compact layout
-                logger.debug(f'Last page is very short, using PDF compact layout')
-                write_pdf(pdf_file, summary_text, 'compact.css')
+                # Regenerate pdf with compact layout if last page very short
+                last_page_len = get_last_page_len(pdf_bytes)
+                i = 1
+                
+                while 0 < last_page_len < 1250:
+                    if i <= 1:
+                        logger.debug(f'Last page very short, compact PDF')
+                    else:
+                        logger.debug(f'Last page still very short, compact more')
+                    pdf_bytes = write_pdf(pdf_file, summary_text, f'compact{i}.css')
+                    last_page_len = get_last_page_len(pdf_bytes)
+                    if i >= 3: break
+                    i += 1
 
         exec_time = time.time() - start_time
         if exec_time > 5:
@@ -231,6 +237,16 @@ def main():
     if num_files > 1:
         all_exec_time = time.time() - all_start_time
         print(f'All files processed in {GREEN}{format_time(all_exec_time)}{RESET}')
+
+
+def get_last_page_len(pdf_bytes):
+    last_page_len = -1
+
+    with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
+        last_page_len = len(doc.load_page(len(doc) - 1).get_text())
+        logger.debug(f'Last page contains {last_page_len} characters')
+
+    return last_page_len
 
 
 def transcribe(filename, model_name, language):
