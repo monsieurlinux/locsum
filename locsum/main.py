@@ -25,6 +25,7 @@ from pathlib import Path
 import markdown_it
 import ollama
 import torch
+#from faster_whisper import WhisperModel
 from weasyprint import HTML
 import whisper
 
@@ -231,13 +232,37 @@ def transcribe(filename, model_name, language):
     model = whisper.load_model(model_name)
     #print(f'Transcribing with {model_name} model on {model.device} device')
     print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
+
     start_time = time.time()
     result = model.transcribe(filename, language=language)
+
     exec_time = time.time() - start_time
     logger.debug(f'Done in {format_time(exec_time)}')
 
     return result['text']
 
+"""
+def transcribe_faster(filename, model_name, language):
+    # Transcribe with faster-whisper
+    # compute_type="float16"       # best tradeoff: fast + accurate
+    # compute_type="int8_float16"  # even faster, slightly lower accuracy
+    # try turbo model
+    model = WhisperModel(model_name, device="cuda", compute_type="float16")
+    print(f'Transcribing with {model_name} model on {model.device} device')
+    #print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
+
+    start_time = time.time()
+    segments, info = model.transcribe(filename, language=language, beam_size=5)
+    segments = list(segments)
+
+    # Strip each segment, skip empties, join with newlines
+    text = "\n".join(seg.text.strip() for seg in segments if seg.text.strip())
+
+    exec_time = time.time() - start_time
+    logger.debug(f'Done in {format_time(exec_time)}')
+
+    return text
+"""
 
 def test_model_speed(transcript_text, ollama_prompt):
     runs = 10
