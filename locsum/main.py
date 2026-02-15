@@ -25,7 +25,6 @@ from pathlib import Path
 import markdown_it
 import ollama
 import torch
-#from faster_whisper import WhisperModel
 from weasyprint import HTML
 import whisper
 
@@ -258,15 +257,38 @@ def transcribe(filename, model_name, language):
 
     start_time = time.time()
     result = model.transcribe(filename, language=language)
-
     exec_time = time.time() - start_time
     logger.debug(f'Done in {format_time(exec_time)}')
 
     return result['text']
 
 """
-def transcribe_faster(filename, model_name, language):
+def transcribe_whisper_cpp(filename, model_name, language):
+    # Transcribe with whisper.cpp
+    from pywhispercpp.model import Model
+
+    # n_threads=6
+    # library_path="./whisper.cpp/build/main/libwhisper.so"
+    # Model download fails here, but succeeds with the pwcpp program
+    model = Model(model=model_name)
+    print(f'Transcribing with {model_name} model on {model.device} device')
+    #print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
+    sys.exit()
+
+    start_time = time.time()
+    result = model.transcribe(filename, language="en", print_progress=True)
+    exec_time = time.time() - start_time
+    logger.debug(f'Done in {format_time(exec_time)}')
+
+    return result['text']
+"""
+
+"""
+def transcribe_faster_whisper(filename, model_name, language):
     # Transcribe with faster-whisper
+    from faster_whisper import WhisperModel
+
+    # device="cuda"                # is it the default?
     # compute_type="float16"       # best tradeoff: fast + accurate
     # compute_type="int8_float16"  # even faster, slightly lower accuracy
     # try turbo model
@@ -286,6 +308,7 @@ def transcribe_faster(filename, model_name, language):
 
     return text
 """
+
 
 def test_model_speed(transcript_text, ollama_prompt):
     runs = 10
