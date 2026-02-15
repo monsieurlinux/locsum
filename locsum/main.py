@@ -65,7 +65,7 @@ def main():
     parser.add_argument('-n', '--no-colors', action='store_true',
                         help="disable color output")
     parser.add_argument('-N', '--no-compact', action='store_true',
-                        help="disable compact PDF layout")
+                        help="disable PDF compaction")
     parser.add_argument('-o', '--ollama-model', metavar='MODEL',
                         help='set the Ollama model for summarization')
     parser.add_argument('-r', '--reset-config', action='store_true',
@@ -220,11 +220,11 @@ def main():
                 last_page_len = get_last_page_len(pdf_bytes)
                 i = 1
                 
-                while 0 < last_page_len < 1250:
+                while 0 < last_page_len < 1500:
                     if i <= 1:
-                        logger.debug(f'Last page very short, compact PDF')
+                        logger.debug(f'Last page is short, compact PDF')
                     else:
-                        logger.debug(f'Last page still very short, compact more')
+                        logger.debug(f'Last page is still short, compact more')
                     pdf_bytes = write_pdf(pdf_file, summary_text, f'compact{i}.css')
                     last_page_len = get_last_page_len(pdf_bytes)
                     if i >= 3: break
