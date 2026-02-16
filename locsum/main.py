@@ -118,7 +118,7 @@ def main():
 
     # Get default configuration
     whisper_language = CONFIG['whisper']['language']
-    whisper_model = CONFIG['whisper']['model_multilang']
+    whisper_model = CONFIG['whisper']['model']
     ollama_model = CONFIG['ollama']['model']
     ollama_prompt = CONFIG['ollama']['prompt']
 
@@ -129,17 +129,18 @@ def main():
     # Set Whisper model
     if args.whisper_model:
         whisper_model = args.whisper_model
-    elif args.tiny:
-        whisper_model = CONFIG['whisper']['tiny']['model']
-    elif whisper_language == 'en':
-        whisper_model = CONFIG['whisper']['model_english']
+    elif args.tiny and not args.whisper_cpp:
+        whisper_model = CONFIG['whisper']['tiny_model']
+    elif args.whisper_cpp and not args.tiny:
+        whisper_model = CONFIG['whisper_cpp']['model']
+    elif args.whisper_cpp and args.tiny:
+        whisper_model = CONFIG['whisper_cpp']['tiny_model']
 
     # Set Ollama model and prompt
     if args.ollama_model:
         ollama_model = args.ollama_model
     elif args.tiny:
-        ollama_model = CONFIG['ollama']['tiny']['model']
-        ollama_prompt = CONFIG['ollama']['tiny']['prompt']
+        ollama_model = CONFIG['ollama']['tiny_model']
 
     # Check if Ollama model available
     if not is_model_available(ollama_model):
@@ -260,29 +261,39 @@ def get_last_page_len(pdf_bytes):
 def transcribe_whisper_std(filename, model_name, language):
     # Transcribe with Whisper
     model = whisper.load_model(model_name)
+
     print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
     start_time = time.time()
     result = model.transcribe(filename, language=language)
     exec_time = time.time() - start_time
     logger.debug(f'Done in {format_time(exec_time)}')
+
+    if not result['text']:
+        logger.error(f'{RED}Transcription failed{RESET}')
+
     return result['text']
 
 
 def transcribe_whisper_cpp(filename, model_name, language):
     # Transcribe with whisper.cpp
+    cli_path = Path(CONFIG['whisper_cpp']['bin_path']) / 'whisper-cli'
+    model_path = Path(CONFIG['whisper_cpp']['models_path']) / model_name
+    cli_path = normalize_path(cli_path, must_exist=True)
+    model_path = normalize_path(model_path, must_exist=True)
+
     # https://github.com/ggml-org/whisper.cpp/tree/master/examples/cli
-    cmd = [
-        "/home/gx10/python/whisper.cpp/build/bin/whisper-cli",
-        "-m", f"/home/gx10/python/whisper.cpp/models/ggml-{model_name}.bin",
-        "-f", filename,
-        "-l", language,
-        "--no-timestamps"
-    ]
+    cmd = [cli_path, "-m", model_path, "-f", filename,
+           "-l", language, "--no-timestamps"]
+
     print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
     start_time = time.time()
     result = subprocess.run(cmd, capture_output=True, text=True)
     exec_time = time.time() - start_time
     logger.debug(f'Done in {format_time(exec_time)}')
+
+    if not result.stdout:
+        logger.error(f'{RED}Transcription failed{RESET}')
+
     return result.stdout
 
 
@@ -603,6 +614,20 @@ def truncate_to_terminal(text, padding=''):
         ellipsis = "..."
         truncated = text[:width - len(ellipsis)]
         return truncated + ellipsis
+
+
+def normalize_path(path, *, must_exist=False):
+    p = Path(path)
+    p = p.expanduser()  # Expand ~
+    p = p.absolute()    # Convert to absolute
+
+    if must_exist:
+        p = p.resolve() # Resolve symlinks and validate existence (?)
+
+        if not p.exists():
+            raise FileNotFoundError(f"Path does not exist: {p}")
+
+    return p
 
 
 def setup_logging(level=logging.DEBUG):
