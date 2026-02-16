@@ -1,10 +1,12 @@
-[whisper]
+[audio]
 language = 'en'
+
+[whisper]
 model = 'base.en'  # optimal for English, but 'turbo' is better for French
 tiny_model = 'tiny.en'
 
 [whisper_cpp]
-bin_path = '~/python/whisper.cpp/build/bin'
+cli_path = '~/python/whisper.cpp/build/bin/whisper-cli'
 models_path = '~/python/whisper.cpp/models'
 model = 'ggml-large-v3-turbo-q5_0.bin'  # same speed as 'base.en' w/ std whisper
 tiny_model = 'ggml-tiny.en.bin'

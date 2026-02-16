@@ -25,9 +25,14 @@ from pathlib import Path
 # Third-party library imports
 import markdown_it
 import ollama
-import torch
 from weasyprint import HTML
-import whisper
+
+try:
+    import torch
+    import whisper
+    HAS_WHISPER_STD = True
+except ImportError:
+    HAS_WHISPER_STD = False
 
 # Add project root to sys.path so script can be called directly w/o 'python3 -m'
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -58,11 +63,9 @@ def main():
 
     parser.add_argument('filenames', nargs='*', metavar='FILE',
                         help='file to process (audio/video, .txt or .md format)')
-    parser.add_argument('-c', '--check-cuda', action='store_true',
-                        help='check if CUDA is available')
-    parser.add_argument('-C', '--whisper-cpp', action='store_true',
-                        help="transcribe with Whisper.cpp "
-                             "instead of OpenAI's Whisper")
+    if HAS_WHISPER_STD:
+        parser.add_argument('-c', '--check-cuda', action='store_true',
+                            help='check if CUDA is available')
     parser.add_argument('-l', '--language', metavar='LANG',
                         help='set the language of the audio')
     parser.add_argument('-n', '--no-colors', action='store_true',
@@ -71,6 +74,11 @@ def main():
                         help="disable PDF compaction")
     parser.add_argument('-o', '--ollama-model', metavar='MODEL',
                         help='set the Ollama model for summarization')
+    if HAS_WHISPER_STD:
+        parser.add_argument('-O', '--openai-whisper', action='store_true',
+                            default=argparse.SUPPRESS,
+                            help="use OpenAI's Whisper even "
+                                 "if Whisper.cpp is available")
     parser.add_argument('-r', '--reset-config', action='store_true',
                         help='reset configuration file to default')
     parser.add_argument('-t', '--transcribe-only', action='store_true',
@@ -81,8 +89,9 @@ def main():
                         version=f'%(prog)s {__version__}')
     parser.add_argument('-w', '--whisper-model', metavar='MODEL',
                         help='set the Whisper model for transcription')
-    parser.add_argument('-W', '--filter-warnings', action='store_true',
-                        help='suppress warnings from PyTorch')
+    if HAS_WHISPER_STD:
+        parser.add_argument('-W', '--filter-warnings', action='store_true',
+                            help='suppress warnings from PyTorch')
     args = parser.parse_args()
 
     if args.no_colors:
@@ -95,14 +104,29 @@ def main():
         print(f'{RED}Error:{RESET} Failed to load configuration file: {e}')
         return
 
-    if args.filter_warnings:
+    if normalize_path(CONFIG['whisper_cpp']['cli_path']).exists():
+        HAS_WHISPER_CPP = True
+    else:
+        HAS_WHISPER_CPP = False
+
+    if HAS_WHISPER_CPP and not hasattr(args, 'openai_whisper'):
+        logger.debug("Using Whisper.cpp for transcription")
+        whisper_engine = 'cpp'
+    elif HAS_WHISPER_STD:
+        logger.debug("Using OpenAI's Whisper for transcription")
+        whisper_engine = 'std'
+    else:
+        print(f"{RED}Error:{RESET} No transcription engine is available, please install either OpenAI's Whisper or Whisper.cpp")
+        return
+
+    if whisper_engine == 'std' and args.filter_warnings:
         # Suppress all CUDA-related warnings
         warnings.filterwarnings("ignore", category=UserWarning, module="torch.cuda")
 
         # Or suppress all warnings from torch
         #warnings.filterwarnings("ignore", module="torch")
 
-    if args.check_cuda:
+    if whisper_engine == 'std' and args.check_cuda:
         # Check if CUDA is available
         print(f'PyTorch {torch.__version__}')
         if torch.cuda.is_available():
@@ -116,31 +140,34 @@ def main():
         print(f'{RED}Error:{RESET} The following arguments are required: FILE')
         return
 
-    # Get default configuration
-    whisper_language = CONFIG['whisper']['language']
-    whisper_model = CONFIG['whisper']['model']
-    ollama_model = CONFIG['ollama']['model']
-    ollama_prompt = CONFIG['ollama']['prompt']
-
     # Set language
     if args.language:
-        whisper_language = args.language
+        language = args.language
+    else:
+        language = CONFIG['audio']['language']
 
     # Set Whisper model
     if args.whisper_model:
         whisper_model = args.whisper_model
-    elif args.tiny and not args.whisper_cpp:
-        whisper_model = CONFIG['whisper']['tiny_model']
-    elif args.whisper_cpp and not args.tiny:
-        whisper_model = CONFIG['whisper_cpp']['model']
-    elif args.whisper_cpp and args.tiny:
-        whisper_model = CONFIG['whisper_cpp']['tiny_model']
+    elif whisper_engine == 'std':
+        if args.tiny:
+            whisper_model = CONFIG['whisper']['tiny_model']
+        else:
+            whisper_model = CONFIG['whisper']['model']
+    elif whisper_engine == 'cpp':
+        if args.tiny:
+            whisper_model = CONFIG['whisper_cpp']['tiny_model']
+        else:
+            whisper_model = CONFIG['whisper_cpp']['model']
 
     # Set Ollama model and prompt
+    ollama_prompt = CONFIG['ollama']['prompt']
     if args.ollama_model:
         ollama_model = args.ollama_model
     elif args.tiny:
         ollama_model = CONFIG['ollama']['tiny_model']
+    else:
+        ollama_model = CONFIG['ollama']['model']
 
     # Check if Ollama model available
     if not is_model_available(ollama_model):
@@ -193,12 +220,12 @@ def main():
         if next_step == 'txt':
             # Assume audio file, attempt transcription
             txt_file = replace_extension(filename, 'txt')
-            if args.whisper_cpp:
+            if whisper_engine == 'cpp':
                 transcript_text = transcribe_whisper_cpp(
-                    filename, whisper_model, whisper_language)
+                    filename, whisper_model, language)
             else:
                 transcript_text = transcribe_whisper_std(
-                    filename, whisper_model, whisper_language)
+                    filename, whisper_model, language)
             write_file(txt_file, transcript_text)
             if args.transcribe_only:
                 next_step = 'none'
@@ -276,7 +303,7 @@ def transcribe_whisper_std(filename, model_name, language):
 
 def transcribe_whisper_cpp(filename, model_name, language):
     # Transcribe with whisper.cpp
-    cli_path = Path(CONFIG['whisper_cpp']['bin_path']) / 'whisper-cli'
+    cli_path = Path(CONFIG['whisper_cpp']['cli_path'])
     model_path = Path(CONFIG['whisper_cpp']['models_path']) / model_name
     cli_path = normalize_path(cli_path, must_exist=True)
     model_path = normalize_path(model_path, must_exist=True)
