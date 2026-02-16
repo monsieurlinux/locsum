@@ -14,6 +14,7 @@ import os
 import pymupdf
 import re
 import shutil
+import subprocess
 import sys
 import time
 import tomllib
@@ -59,6 +60,9 @@ def main():
                         help='file to process (audio/video, .txt or .md format)')
     parser.add_argument('-c', '--check-cuda', action='store_true',
                         help='check if CUDA is available')
+    parser.add_argument('-C', '--whisper-cpp', action='store_true',
+                        help="transcribe with Whisper.cpp "
+                             "instead of OpenAI's Whisper")
     parser.add_argument('-l', '--language', metavar='LANG',
                         help='set the language of the audio')
     parser.add_argument('-n', '--no-colors', action='store_true',
@@ -188,7 +192,12 @@ def main():
         if next_step == 'txt':
             # Assume audio file, attempt transcription
             txt_file = replace_extension(filename, 'txt')
-            transcript_text = transcribe(filename, whisper_model, whisper_language)
+            if args.whisper_cpp:
+                transcript_text = transcribe_whisper_cpp(
+                    filename, whisper_model, whisper_language)
+            else:
+                transcript_text = transcribe_whisper_std(
+                    filename, whisper_model, whisper_language)
             write_file(txt_file, transcript_text)
             if args.transcribe_only:
                 next_step = 'none'
@@ -248,40 +257,34 @@ def get_last_page_len(pdf_bytes):
     return last_page_len
 
 
-def transcribe(filename, model_name, language):
-    # Transcribe with Whisper. It isn't necessary to explicitely load the model
-    # to CUDA. Whisper handles device detection automatically.
+def transcribe_whisper_std(filename, model_name, language):
+    # Transcribe with Whisper
     model = whisper.load_model(model_name)
-    #print(f'Transcribing with {model_name} model on {model.device} device')
     print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
-
     start_time = time.time()
     result = model.transcribe(filename, language=language)
     exec_time = time.time() - start_time
     logger.debug(f'Done in {format_time(exec_time)}')
-
     return result['text']
 
-"""
+
 def transcribe_whisper_cpp(filename, model_name, language):
     # Transcribe with whisper.cpp
-    from pywhispercpp.model import Model
-
-    # n_threads=6
-    # library_path="./whisper.cpp/build/main/libwhisper.so"
-    # Model download fails here, but succeeds with the pwcpp program
-    model = Model(model=model_name)
-    print(f'Transcribing with {model_name} model on {model.device} device')
-    #print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
-    sys.exit()
-
+    # https://github.com/ggml-org/whisper.cpp/tree/master/examples/cli
+    cmd = [
+        "/home/gx10/python/whisper.cpp/build/bin/whisper-cli",
+        "-m", f"/home/gx10/python/whisper.cpp/models/ggml-{model_name}.bin",
+        "-f", filename,
+        "-l", language,
+        "--no-timestamps"
+    ]
+    print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
     start_time = time.time()
-    result = model.transcribe(filename, language="en", print_progress=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
     exec_time = time.time() - start_time
     logger.debug(f'Done in {format_time(exec_time)}')
+    return result.stdout
 
-    return result['text']
-"""
 
 """
 def transcribe_faster_whisper(filename, model_name, language):
