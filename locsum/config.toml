@@ -8,7 +8,7 @@ tiny_model = 'tiny.en'
 [whisper_cpp]
 cli_path = '~/whisper.cpp/build/bin/whisper-cli'
 models_path = '~/whisper.cpp/models'
-model = 'ggml-large-v3-turbo-q5_0.bin'  # same speed as 'base.en' w/ std whisper
+model = 'ggml-base.en.bin'  # 'large-v3-turbo' gets stuck in repetition loops
 tiny_model = 'ggml-tiny.en.bin'
 
 [ollama]
