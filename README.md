@@ -32,7 +32,7 @@ These libraries and their sub-dependencies will be installed automatically when 
 - Ensure `ffmpeg` is installed on your system
 - Install [Ollama][ollama-download-link] and pull a [model][ollama-search-link] to use for the summarization (e.g. `ollama pull glm-4.7-flash`)
 
-### Locsum Installation with `pipx`
+### Installation with `pipx`
 
 It is recommended to install Locsum within a [virtual environment][venv-link] to avoid conflicts with system packages. Some Linux distributions enforce this. You can use `pipx` to handle the virtual environment automatically, or create one manually and use `pip`.
 
@@ -67,7 +67,7 @@ You may need to reopen your terminal for the PATH changes to take effect. If you
 pipx install locsum
 ```
 
-### Locsum Installation with `pip`
+### Installation with `pip`
 
 If you prefer to manage the virtual environment manually, you can create and activate it by following this [tutorial][venv-link]. Then install Locsum:
 
@@ -75,9 +75,11 @@ If you prefer to manage the virtual environment manually, you can create and act
 pip install locsum
 ```
 
-### PyTorch Upgrade for GPU support
+### NVIDIA GPU support
 
-The default [PyTorch][pytorch-link] library installation doesn't include GPU support. Here is how to upgrade it.
+When installing Locsum, the [PyTorch][pytorch-link] library is installed as a sub-dependency to the [whisper][whisper-link] library. However, the version installed by default doesn't include GPU support. For the transcription to benefit from GPU acceleration, you need to either upgrade PyTorch, or to install [whisper.cpp][whispercpp-github-link] as a replacement to the original whisper library. Locsum supports both options. Whisper.cpp is faster, but the speed gain will depend on your hardware. The first option is simpler, whereas the second option requires some compiling.
+
+#### Option 1: Upgrade PyTorch
 
 **1. Get the CUDA version**
 
@@ -93,13 +95,13 @@ Uninstall PyTorch and reinstall the right CUDA build (cu130 in my case).
   pipx runpip locsum uninstall torch
   pipx inject locsum torch --index-url https://download.pytorch.org/whl/cu130
   ```
+
 - **If Locsum is installed with `pip`** (with the virtual environment activated)
 
   ```sh
   pip uninstall torch
   pip install torch --index-url https://download.pytorch.org/whl/cu130
   ```
-  
 
 **3. Verify installation**
 
@@ -109,6 +111,45 @@ Run `locsum -c` to check that CUDA is available.
   PyTorch 2.10.0+cu130
   CUDA 13.0 is available
   ```
+
+#### Option 2: Install whisper.cpp
+
+Whisper.cpp doesn't need PyTorch, but it still requires [CUDA][cuda-link] and [cuBLAS][cublas-link] to be installed on your system.
+
+**1. Install libraries for ffmpeg integration**
+
+If you want to be able to transcribe files such as .aac without first having to convert them to .wav, you need to compile whisper.cpp with ffmpeg support. It seems however this option is only available on [Linux][whispercpp-ffmpeg-link].
+
+```sh
+sudo apt install libavcodec-dev libavformat-dev libavutil-dev
+```
+
+**2. Clone whisper.cpp repository**
+
+```sh
+cd ~  # Or wherever you wish to install whisper.cpp
+git clone https://github.com/ggml-org/whisper.cpp.git
+cd whisper.cpp
+```
+
+**3. Build whisper.cpp**
+
+To enable [CUDA][whispercpp-nvidia-link] and [ffmpeg][whispercpp-ffmpeg-link] support, you need to use the `-DGGML_CUDA=1` and `-DWHISPER_FFMPEG=yes` arguments.
+
+```sh
+cmake -B build -DGGML_CUDA=1 -DWHISPER_FFMPEG=yes
+cmake --build build -j
+```
+
+**4. Verify installation**
+
+```sh
+sh ./models/download-ggml-model.sh base.en  # Download the base.en model in ggml format
+ffmpeg -i samples/jfk.wav samples/jfk.aac   # Convert the audio file to .aac format
+./build/bin/whisper-cli -f samples/jfk.aac  # Transcribe the audio file
+```
+
+If you encounter a problem, please refer to the official [whisper.cpp documentation][whispercpp-github-link].
 
 ## Deployments
 
@@ -125,7 +166,7 @@ View all releases on:
 locsum [arguments] FILE [FILE ...]
 ```
 
-### Command-Line Arguments
+### Arguments
 
 | Argument            | Short Flag | Description                                     |
 | ------------------- | ---------- | ----------------------------------------------- |
@@ -133,8 +174,9 @@ locsum [arguments] FILE [FILE ...]
 | `--check-cuda`      | `-c`       | Check if CUDA is available                      |
 | `--language`        | `-l`       | Set the language of the audio                   |
 | `--no-colors`       | `-n`       | Disable color output                            |
-| `--no-compact`      | `-N`       | Disable compact PDF layout                      |
+| `--no-compact`      | `-N`       | Disable PDF compaction                          |
 | `--ollama-model`    | `-o`       | Set the Ollama model for summarization          |
+| `--openai-whisper`  | `-O`       | Use OpenAI's Whisper even if Whisper.cpp is available |
 | `--reset-config`    | `-r`       | Reset configuration file to default             |
 | `--transcribe-only` | `-t`       | Transcribe only, don't generate a summary       |
 | `--tiny`            | `-T`       | Use tiny Whisper and Ollama models for testing  |
@@ -232,6 +274,8 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 Thanks to the creators and contributors of all the powerful libraries used in this project for making it possible.
 
+[cublas-link]: https://developer.nvidia.com/cublas
+[cuda-link]: https://developer.nvidia.com/cuda-downloads
 [github-releases]: https://github.com/monsieurlinux/locsum/releases
 [gx10-link]: https://www.asus.com/networking-iot-servers/desktop-ai-supercomputer/ultra-small-ai-supercomputers/asus-ascent-gx10/
 [jetson-link]: https://www.nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/nano-super-developer-kit/
@@ -252,3 +296,6 @@ Thanks to the creators and contributors of all the powerful libraries used in th
 [venv-link]: https://docs.python.org/3/tutorial/venv.html
 [weasyprint-link]: https://github.com/Kozea/WeasyPrint
 [whisper-link]: https://github.com/openai/whisper
+[whispercpp-ffmpeg-link]: https://github.com/ggml-org/whisper.cpp#ffmpeg-support-linux-only
+[whispercpp-github-link]: https://github.com/ggml-org/whisper.cpp
+[whispercpp-nvidia-link]: https://github.com/ggml-org/whisper.cpp#nvidia-gpu-support
