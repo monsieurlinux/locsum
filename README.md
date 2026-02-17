@@ -75,7 +75,7 @@ If you prefer to manage the virtual environment manually, you can create and act
 pip install locsum
 ```
 
-### NVIDIA GPU support
+### NVIDIA GPU Support
 
 When installing Locsum, the [PyTorch][pytorch-link] library is installed as a sub-dependency to the [whisper][whisper-link] library. However, the version installed by default doesn't include GPU support. For the transcription to benefit from GPU acceleration, you need to either upgrade PyTorch, or to install [whisper.cpp][whispercpp-github-link] as a replacement to the original whisper library. Locsum supports both options. Whisper.cpp is faster, but the speed gain will depend on your hardware. The first option is simpler, whereas the second option requires some compiling.
 
@@ -112,9 +112,9 @@ Run `locsum -c` to check that CUDA is available.
   CUDA 13.0 is available
   ```
 
-#### Option 2: Install whisper.cpp
+#### Option 2: Install Whisper.cpp
 
-Whisper.cpp doesn't need PyTorch, but it still requires [CUDA][cuda-link] and [cuBLAS][cublas-link] to be installed on your system.
+Whisper.cpp doesn't need PyTorch, but it still requires [CUDA][cuda-link] and [cuBLAS][cublas-link] to be installed on your system. Refer to the official [whisper.cpp documentation][whispercpp-github-link] for more information.
 
 **1. Install libraries for ffmpeg integration**
 
@@ -149,7 +149,17 @@ ffmpeg -i samples/jfk.wav samples/jfk.aac   # Convert the audio file to .aac for
 ./build/bin/whisper-cli -f samples/jfk.aac  # Transcribe the audio file
 ```
 
-If you encounter a problem, please refer to the official [whisper.cpp documentation][whispercpp-github-link].
+**5. Configure Locsum**
+
+To enable whisper.cpp in Locsum, ensure the CLI binary and model directory are correctly specified in the [configuration file](#configuration) (`cli_path` and `models_path` settings). If you installed whisper.cpp in your home directory, the default paths should work out of the box.
+
+For optimal speed, experiment to find the fastest combination of `threads` and `processors` on your hardware. On my device (ASUS GX10, 20-core ARM CPU), setting `threads=1` and `processors=18` reduced inference time by ~3× compared to defaults (`threads=4` and `processors=1`).
+
+Use the [bench.py script][whispercpp_bench-link] included with whisper.cpp to benchmark your setup. For example:
+
+```sh
+python3 scripts/bench.py -f samples/jfk.wav -t 1,2,4,8 -p 1,2,4,8,16
+```
 
 ## Deployments
 
@@ -296,6 +306,7 @@ Thanks to the creators and contributors of all the powerful libraries used in th
 [venv-link]: https://docs.python.org/3/tutorial/venv.html
 [weasyprint-link]: https://github.com/Kozea/WeasyPrint
 [whisper-link]: https://github.com/openai/whisper
+[whispercpp_bench-link]: https://github.com/ggml-org/whisper.cpp#benchmarks
 [whispercpp-ffmpeg-link]: https://github.com/ggml-org/whisper.cpp#ffmpeg-support-linux-only
 [whispercpp-github-link]: https://github.com/ggml-org/whisper.cpp
 [whispercpp-nvidia-link]: https://github.com/ggml-org/whisper.cpp#nvidia-gpu-support
