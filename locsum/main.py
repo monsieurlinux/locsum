@@ -287,6 +287,7 @@ def get_last_page_len(pdf_bytes):
 
 def transcribe_whisper_std(filename, model_name, language):
     # Transcribe with Whisper
+    # Models are stored in ~/.cache/whisper/
     model = whisper.load_model(model_name)
 
     print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
@@ -303,14 +304,18 @@ def transcribe_whisper_std(filename, model_name, language):
 
 def transcribe_whisper_cpp(filename, model_name, language):
     # Transcribe with whisper.cpp
+    # Models are stored in whisper.cpp/models/
     cli_path = Path(CONFIG['whisper_cpp']['cli_path'])
     model_path = Path(CONFIG['whisper_cpp']['models_path']) / model_name
     cli_path = normalize_path(cli_path, must_exist=True)
     model_path = normalize_path(model_path, must_exist=True)
+    threads = str(CONFIG['whisper_cpp']['threads'])
+    processors = str(CONFIG['whisper_cpp']['processors'])
 
     # https://github.com/ggml-org/whisper.cpp/tree/master/examples/cli
-    cmd = [cli_path, "-m", model_path, "-f", filename,
-           "-l", language, "--no-timestamps"]
+    cmd = [cli_path, '-m', model_path, '-f', filename,
+           '-l', language, '-t', threads, '-p', processors,
+           '--no-timestamps']
 
     print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
     start_time = time.time()
@@ -327,6 +332,7 @@ def transcribe_whisper_cpp(filename, model_name, language):
 """
 def transcribe_faster_whisper(filename, model_name, language):
     # Transcribe with faster-whisper
+    # Models are stored in ~/.cache/huggingface/hub/
     from faster_whisper import WhisperModel
 
     # device="cuda"                # is it the default?

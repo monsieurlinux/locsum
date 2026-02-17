@@ -10,6 +10,8 @@ cli_path = '~/whisper.cpp/build/bin/whisper-cli'
 models_path = '~/whisper.cpp/models'
 model = 'ggml-base.en.bin'  # 'large-v3-turbo' gets stuck in repetition loops
 tiny_model = 'ggml-tiny.en.bin'
+threads = 1                 # optimize with whisper.cpp/scripts/bench.py
+processors = 18             # idem
 
 [ollama]
 model = 'glm-4.7-flash:q8_0'  # best speed/quality compromise vs q4_K_M and bf16
