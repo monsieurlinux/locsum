@@ -30,7 +30,7 @@ These libraries and their sub-dependencies will be installed automatically when 
 ### Prerequisites
 
 - Ensure `ffmpeg` is installed on your system
-- Install [Ollama][ollama-download-link] and pull a [model][ollama-search-link] to use for the summarization (e.g. `ollama pull glm-4.7-flash`)
+- Install [Ollama][ollama-download-link] and pull a [model][ollama-search-link] to use for the summarization (e.g. `ollama pull gemma3:4b`)
 
 ### Installation with `pipx`
 

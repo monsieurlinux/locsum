@@ -2,19 +2,19 @@
 language = 'en'
 
 [whisper]
-model = 'base.en'  # optimal for English, but 'turbo' is better for French
+model = 'base.en'           # 'base.en' optimal for English
 tiny_model = 'tiny.en'
 
 [whisper_cpp]
 cli_path = '~/whisper.cpp/build/bin/whisper-cli'
 models_path = '~/whisper.cpp/models'
-model = 'ggml-base.en.bin'  # 'large-v3-turbo' gets stuck in repetition loops
+model = 'ggml-base.en.bin'  # 'ggml-base.en.bin' optimal for English
 tiny_model = 'ggml-tiny.en.bin'
-threads = 1                 # optimize with whisper.cpp/scripts/bench.py
-processors = 18             # idem
+threads = 4                 # optimize with whisper.cpp/scripts/bench.py
+processors = 1              # threads = 1 / processors = 18 optimal on ASUS GX10
 
 [ollama]
-model = 'glm-4.7-flash:q8_0'  # best speed/quality compromise vs q4_K_M and bf16
+model = 'gemma3:4b'         # 'glm-4.7-flash:q8_0' (30b) optimal on ASUS GX10
 tiny_model = 'tinyllama'
 prompt = "Please provide a comprehensive, detailed, and structured breakdown of the following text. Do not just list events sequentially; instead, analyze the content and group it into distinct themes or categories. For each theme include a clear, bolded heading. Ensure the summary captures the full nuance of the speaker's opinions, including any criticisms, predictions, or advice offered. The tone should be informative and objective, accurately reflecting the source material. Here is the text:"
 
