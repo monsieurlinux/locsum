@@ -41,24 +41,18 @@ if str(PROJECT_ROOT) not in sys.path:
 
 # Local imports
 from locsum import __version__
+import config
+from colors import BLUE, WHITE, GREEN, YELLOW, RED, RESET
+from logger import logger
+#from transcriber import create_transcriber
+from utils import format_time, normalize_path
 
 CONFIG = {}
 
-BLACK   = '\033[30m'
-RED     = '\033[31m'
-GREEN   = '\033[32m'
-YELLOW  = '\033[33m'
-BLUE    = '\033[34m'
-MAGENTA = '\033[35m'
-CYAN    = '\033[36m'
-WHITE   = '\033[37m'
-RESET   = '\033[0m'
-
-# Get a logger for this script
-logger = logging.getLogger(__name__)
-
 
 def main():
+    global CONFIG
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument('filenames', nargs='*', metavar='FILE',
@@ -99,7 +93,8 @@ def main():
         BLACK = RED = GREEN = YELLOW = BLUE = MAGENTA = CYAN = WHITE = RESET = ''
 
     try:
-        load_config(args.reset_config)
+        config.load_config(args.reset_config)
+        CONFIG = config.CONFIG
     except FileNotFoundError as e:
         print(f'{RED}Error:{RESET} Failed to load configuration file: {e}')
         return
@@ -219,6 +214,8 @@ def main():
         if next_step == 'txt':
             # Assume audio file, attempt transcription
             txt_file = replace_extension(filename, 'txt')
+            #transcript_text = transcribe(filename, whisper_engine,
+            #                             whisper_model, language)
             if whisper_engine == 'cpp':
                 transcript_text = transcribe_whisper_cpp(
                     filename, whisper_model, language)
@@ -272,6 +269,20 @@ def main():
         all_exec_time = time.time() - all_start_time
         print(f'All files processed in {GREEN}{format_time(all_exec_time)}{RESET}')
 
+"""
+def transcribe(audio_path: str, engine: str, whisper_model: str, language: str):
+    transcriber = create_transcriber(
+        engine=engine,
+        model_name=whisper_model,
+        language=language
+    )
+    try:
+        text = transcriber.transcribe(audio_path)
+        print(f"Result: {text[:200]}...")
+        return text
+    except Exception as e:
+        print(f"Transcription failed: {e}")
+"""
 
 def get_last_page_len(pdf_bytes):
     last_page_len = -1
@@ -325,34 +336,6 @@ def transcribe_whisper_cpp(filename, model_name, language):
         logger.error(f'{RED}Transcription failed{RESET}')
 
     return result.stdout
-
-
-"""
-def transcribe_faster_whisper(filename, model_name, language):
-    # Transcribe with faster-whisper
-    # Models are stored in ~/.cache/huggingface/hub/
-    from faster_whisper import WhisperModel
-
-    # device="cuda"                # is it the default?
-    # compute_type="float16"       # best tradeoff: fast + accurate
-    # compute_type="int8_float16"  # even faster, slightly lower accuracy
-    # try turbo model
-    model = WhisperModel(model_name, device="cuda", compute_type="float16")
-    print(f'Transcribing with {model_name} model on {model.device} device')
-    #print(f'Transcribing with {YELLOW}{model_name}{RESET} model')
-
-    start_time = time.time()
-    segments, info = model.transcribe(filename, language=language, beam_size=5)
-    segments = list(segments)
-
-    # Strip each segment, skip empties, join with newlines
-    text = "\n".join(seg.text.strip() for seg in segments if seg.text.strip())
-
-    exec_time = time.time() - start_time
-    logger.debug(f'Done in {format_time(exec_time)}')
-
-    return text
-"""
 
 
 def test_model_speed(transcript_text):
@@ -538,14 +521,7 @@ def write_pdf(pdf_file, md_content, css_file):
     
     pdf_bytes = HTML(string=html).write_pdf()
     write_file(pdf_file, pdf_bytes, mode='wb')
-    #logger.debug(f'Wrote to {pdf_file}')
     return pdf_bytes
-
-
-def format_time(seconds):
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
 
 
 def write_file(filename, content, mode='w'):
@@ -591,50 +567,6 @@ def cleanup_filename(filename):
     return f'{p.parent}/{stem}{p.suffix}'
 
 
-def load_config(reset_config = False):
-    global CONFIG
-
-    app_name = 'locsum'
-    config_file = 'config.toml'
-
-    config_dir = get_config_dir(app_name)
-    user_config_file = config_dir / config_file
-    default_config_file = PROJECT_ROOT / app_name / config_file
-
-    if not user_config_file.exists() or reset_config:
-        if default_config_file.exists():
-            shutil.copy2(default_config_file, user_config_file)
-            logger.debug(f'Config initialized at {user_config_file}')
-        else:
-            raise FileNotFoundError(f'Default config missing at {default_config_file}')
-    else:
-        logger.debug(f'Found config file at {user_config_file}')
-
-    with open(user_config_file, 'rb') as f:
-        CONFIG = tomllib.load(f)
-
-
-def get_config_dir(app_name):
-    if sys.platform == "win32":
-        # Windows: Use %APPDATA% (%USERPROFILE%\AppData\Roaming)
-        config_dir = Path(os.environ.get("APPDATA", "")) / app_name
-    elif sys.platform == "darwin":
-        # macOS: Use ~/Library/Preferences
-        config_dir = Path.home() / "Library" / "Preferences" / app_name
-    else:
-        # Linux and other Unix-like: Use ~/.config or XDG_CONFIG_HOME if set
-        config_home = os.environ.get("XDG_CONFIG_HOME", "")
-        if config_home:
-            config_dir = Path(config_home) / app_name
-        else:
-            config_dir = Path.home() / ".config" / app_name
-    
-    # Create the directory if it doesn't exist
-    config_dir.mkdir(parents=True, exist_ok=True)
-    
-    return config_dir
-
-
 def truncate_to_terminal(text, padding=''):
     width = shutil.get_terminal_size().columns - len(padding)
 
@@ -650,37 +582,8 @@ def truncate_to_terminal(text, padding=''):
         return truncated + ellipsis
 
 
-def normalize_path(path, *, must_exist=False):
-    p = Path(path)
-    p = p.expanduser()  # Expand ~
-    p = p.absolute()    # Convert to absolute
-
-    if must_exist:
-        p = p.resolve() # Resolve symlinks and validate existence (?)
-
-        if not p.exists():
-            raise FileNotFoundError(f"Path does not exist: {p}")
-
-    return p
-
-
-def setup_logging(level=logging.DEBUG):
-    """Configure logging for this module"""
-    # print() is for user consumption, logging is for developer consumption
-    #logger.handlers.clear()  # Remove any existing handlers from your logger
-    if not logger.handlers:  # Prevent duplicate handlers
-        # TODO: Optionaly make the call to basicConfig if I need to
-        handler = logging.StreamHandler()  # pass sys.stdout?
-        handler.setLevel(level)
-        formatter = logging.Formatter('%(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(level)
-        logger.propagate = False  # Don't bubble up to root
-
-
 if __name__ == '__main__':
-    #setup_logging()  # Try this instead if messages are not displayed
+    #setup_logging()  # Try this logger.py function if messages not displayed
 
     # Configure the root logger
     logging.basicConfig(level=logging.WARNING,
