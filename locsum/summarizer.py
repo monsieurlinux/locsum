@@ -119,3 +119,40 @@ def get_context_length(model_name: str) -> int:
         return 0
 
 
+def test_model_speed(transcript_text):
+    runs = 10
+    times_q4km = []
+    times_q8_0 = []
+    times_bf16 = []
+
+    for i in range(runs):
+        model = 'glm-4.7-flash'
+        print(f'Run {i} with model {model}')
+        start = time.perf_counter()
+        summarize(transcript_text, model)
+        end = time.perf_counter()
+        times_q4km.append(end - start)
+
+        model = 'glm-4.7-flash:q8_0'
+        print(f'Run {i} with model {model}')
+        start = time.perf_counter()
+        summarize(transcript_text, model)
+        end = time.perf_counter()
+        times_q8_0.append(end - start)
+
+        model = 'glm-4.7-flash:bf16'
+        print(f'Run {i} with model {model}')
+        start = time.perf_counter()
+        summarize(transcript_text, model)
+        end = time.perf_counter()
+        times_bf16.append(end - start)
+
+        avg_q4km = sum(times_q4km) / len(times_q4km)
+        avg_q8_0 = sum(times_q8_0) / len(times_q8_0)
+        avg_bf16 = sum(times_bf16) / len(times_bf16)
+
+        print(f"Average time for q4km: {avg_q4km} seconds")  # 69.1 sec
+        print(f"Average time for q8_0: {avg_q8_0} seconds")  # 86.6 sec (+25%)
+        print(f"Average time for bf16: {avg_bf16} seconds")  # 132.4 sec (+92%)
+
+
