@@ -1,0 +1,121 @@
+# Standard library imports
+import time
+
+# Third-party library imports
+import ollama
+
+# Local imports
+from colors import GREEN, YELLOW, RED, RESET
+from logger import logger
+from utils import format_time
+
+
+def summarize(transcript, model, config):
+    # Summarize with Ollama
+    CONFIG = config
+
+    print(f'Summarizing with {YELLOW}{model}{RESET} model')
+    start_time = time.time()
+
+    # Initialize the conversation list with system + user prompts
+    messages = [{
+        "role": "system",
+        "content": CONFIG['summary']['system_prompt']
+    }]
+
+    messages.append({
+        "role": "user",
+        "content": f"{CONFIG['summary']['user_prompt']}\n\n{transcript}"
+    })
+
+    # Get the first response
+    response = ollama.chat(model=model, messages=messages)
+    summary = response['message']['content']
+    exec_time = time.time() - start_time
+    ratio_pct = len(summary) / len(transcript) * 100
+    logger.debug(f'Done in {format_time(exec_time)} ({ratio_pct:.1f}% ratio)')
+
+    # Add the response to conversation history
+    messages.append({
+        "role": "assistant",
+        "content": summary
+    })
+    
+    # Determine the summary target ratio based on transcript size
+    transcript_size = len(transcript)
+    
+    if transcript_size < CONFIG['summary']['small_transcript_max_size']:
+        target_ratio = CONFIG['summary']['small_transcript_target_ratio']
+    elif transcript_size < CONFIG['summary']['medium_transcript_max_size']:
+        target_ratio = CONFIG['summary']['medium_transcript_target_ratio']
+    else:
+        target_ratio = CONFIG['summary']['large_transcript_target_ratio']
+
+    # Request details if summary too short
+    if ratio_pct < target_ratio:
+        # TODO: Maybe replace by while loop with max number of iterations
+        print(f"Summary is too short ({RED}{ratio_pct:.1f}%{RESET} ratio for "
+              f"{GREEN}{target_ratio}%{RESET} target), asking for more details")
+        start_time = time.time()
+        
+        # Add the prompt to request a more detailed summary
+        messages.append({
+            "role": "user", 
+            "content": CONFIG['summary']['expand_prompt']
+        })
+        
+        # Get the new response
+        response = ollama.chat(model=model, messages=messages)
+        summary = response['message']['content']
+        exec_time = time.time() - start_time
+        ratio_pct = len(summary) / len(transcript) * 100
+        logger.debug(f'Done in {format_time(exec_time)} ({ratio_pct:.1f}% ratio)')
+        
+        color = RED if ratio_pct < target_ratio else GREEN
+        print(f"New summary has a {color}{ratio_pct:.1f}%{RESET} ratio")
+        
+        # Add the response to conversation history for the next iteration
+        messages.append({
+            "role": "assistant",
+            "content": summary
+        })
+
+    return summary
+
+
+def is_model_available(model_name: str) -> bool:
+    # Fetch local models
+    models = ollama.list()['models']
+
+    # Extract just the names into a list
+    names = [m['model'] for m in models]
+
+    # Check for exact match or with 'latest' suffix
+    return model_name in names or f'{model_name}:latest' in names
+
+
+def get_context_length(model_name: str) -> int:
+    try:
+        modelinfo = ollama.show(model_name).get("modelinfo")
+
+        if not isinstance(modelinfo, dict):
+            logger.debug(f"'modelinfo' not found or not a dict for model '{model_name}'")
+            return 0
+
+        # Look for any key ending with '.context_length'
+        for key, value in modelinfo.items():
+            if key.endswith(".context_length"):
+                try:
+                    return int(value)
+                except (ValueError, TypeError):
+                    logger.debug(f"Context length value for key '{key}' is not an integer: {value}")
+                    continue
+
+        logger.debug(f"No '.context_length' key found in modelinfo for '{model_name}'")
+        return 0
+
+    except Exception as e:
+        logger.debug(f"Error fetching model info for '{model_name}': {e}")
+        return 0
+
+

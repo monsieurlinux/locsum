@@ -1,9 +1,11 @@
+# Standard library imports
 import os
 import sys
-from pathlib import Path
 import shutil
 import tomllib
+from pathlib import Path
 
+# Local imports
 from logger import logger
 
 CONFIG = {}
