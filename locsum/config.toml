@@ -2,7 +2,7 @@
 language = 'en'
 
 [whisper]
-model = 'base.en'           # 'base.en' optimal for English
+model = 'base.en'  # 'base.en' optimal for English (perfection not necessary)
 tiny_model = 'tiny.en'
 
 [whisper_cpp]
@@ -16,5 +16,16 @@ processors = 1              # threads = 1 / processors = 18 optimal on ASUS GX10
 [ollama]
 model = 'gemma3:4b'         # 'glm-4.7-flash:q8_0' (30b) optimal on ASUS GX10
 tiny_model = 'tinyllama'
-prompt = "Please provide a comprehensive, detailed, and structured breakdown of the following text. Do not just list events sequentially; instead, analyze the content and group it into distinct themes or categories. For each theme include a clear, bolded heading. Ensure the summary captures the full nuance of the speaker's opinions, including any criticisms, predictions, or advice offered. The tone should be informative and objective, accurately reflecting the source material. Here is the text:"
 
+[summary]
+system_prompt = "You are a helpful assistant specializing in detailed summaries."
+user_prompt = "Please provide a comprehensive, detailed, and structured breakdown of the following text. Do not just list events sequentially; instead, analyze the content and group it into distinct themes or categories. For each theme include a clear, bolded heading. Ensure the summary captures the full nuance of the speaker's opinions, including any criticisms, predictions, or advice offered. The tone should be informative and objective, accurately reflecting the source material. Here is the text:"
+expand_prompt = "Could you tell me more about that in detail?"
+small_transcript_max_size = 25000
+medium_transcript_max_size = 50000
+small_transcript_target_ratio = 10
+medium_transcript_target_ratio = 6
+large_transcript_target_ratio = 4
+
+[pdf]
+short_page_threshold = 1500

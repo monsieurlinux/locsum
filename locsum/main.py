@@ -160,8 +160,7 @@ def main():
         else:
             whisper_model = CONFIG['whisper_cpp']['model']
 
-    # Set Ollama model and prompt
-    ollama_prompt = CONFIG['ollama']['prompt']
+    # Set Ollama model
     if args.ollama_model:
         ollama_model = args.ollama_model
     elif args.tiny:
@@ -238,7 +237,7 @@ def main():
             if not transcript_text:
                 # We are starting with a 'txt' file
                 transcript_text = read_file(filename)
-            summary_text = summarize(transcript_text, ollama_model, ollama_prompt)
+            summary_text = summarize(transcript_text, ollama_model)
             write_file(md_file, summary_text)
             next_step = 'pdf'
 
@@ -251,12 +250,11 @@ def main():
             pdf_bytes = write_pdf(pdf_file, summary_text, 'regular.css')
 
             if not args.no_compact:
-                # TODO: Move threshold to configuration file
                 # Regenerate pdf with compact layout if last page very short
                 last_page_len = get_last_page_len(pdf_bytes)
                 i = 1
                 
-                while 0 < last_page_len < 1500:
+                while 0 < last_page_len < CONFIG['pdf']['short_page_threshold']:
                     if i <= 1:
                         logger.debug(f'Last page is short, compact PDF')
                     else:
@@ -357,7 +355,7 @@ def transcribe_faster_whisper(filename, model_name, language):
 """
 
 
-def test_model_speed(transcript_text, ollama_prompt):
+def test_model_speed(transcript_text):
     runs = 10
     times_q4km = []
     times_q8_0 = []
@@ -367,21 +365,21 @@ def test_model_speed(transcript_text, ollama_prompt):
         model = 'glm-4.7-flash'
         print(f'Run {i} with model {model}')
         start = time.perf_counter()
-        summarize(transcript_text, model, ollama_prompt)
+        summarize(transcript_text, model)
         end = time.perf_counter()
         times_q4km.append(end - start)
 
         model = 'glm-4.7-flash:q8_0'
         print(f'Run {i} with model {model}')
         start = time.perf_counter()
-        summarize(transcript_text, model, ollama_prompt)
+        summarize(transcript_text, model)
         end = time.perf_counter()
         times_q8_0.append(end - start)
 
         model = 'glm-4.7-flash:bf16'
         print(f'Run {i} with model {model}')
         start = time.perf_counter()
-        summarize(transcript_text, model, ollama_prompt)
+        summarize(transcript_text, model)
         end = time.perf_counter()
         times_bf16.append(end - start)
 
@@ -394,56 +392,56 @@ def test_model_speed(transcript_text, ollama_prompt):
         print(f"Average time for bf16: {avg_bf16} seconds")  # 132.4 sec (+92%)
 
 
-def summarize(transcript, model, prompt):
+def summarize(transcript, model):
     # Summarize with Ollama
     print(f'Summarizing with {YELLOW}{model}{RESET} model')
     start_time = time.time()
 
-    # Setup your input and the initial context
-    # Initialize the conversation list
-    messages = [
-        {
-            "role": "system", 
-            "content": "You are a helpful assistant specializing in detailed summaries."
-        }
-    ]
+    # Initialize the conversation list with system + user prompts
+    messages = [{
+        "role": "system",
+        "content": CONFIG['summary']['system_prompt']
+    }]
 
-    # First Request: Summarize the text
-    # We send the system prompt + the text to summarize
-    messages.append({"role": "user", "content": f"{prompt}\n\n{transcript}"})
+    messages.append({
+        "role": "user",
+        "content": f"{CONFIG['summary']['user_prompt']}\n\n{transcript}"
+    })
 
+    # Get the first response
     response = ollama.chat(model=model, messages=messages)
     summary = response['message']['content']
     exec_time = time.time() - start_time
     ratio_pct = len(summary) / len(transcript) * 100
     logger.debug(f'Done in {format_time(exec_time)} ({ratio_pct:.1f}% ratio)')
 
-    # Add the first response to history so the model remembers what it wrote
-    messages.append({"role": "assistant", "content": summary})
+    # Add the response to conversation history
+    messages.append({
+        "role": "assistant",
+        "content": summary
+    })
     
-    # TODO: Make target ratios configurable
+    # Determine the summary target ratio based on transcript size
     transcript_size = len(transcript)
     
-    if transcript_size < 25000:
-        target_ratio = 10
-    elif transcript_size < 50000:
-        target_ratio = 6
+    if transcript_size < CONFIG['summary']['small_transcript_max_size']:
+        target_ratio = CONFIG['summary']['small_transcript_target_ratio']
+    elif transcript_size < CONFIG['summary']['medium_transcript_max_size']:
+        target_ratio = CONFIG['summary']['medium_transcript_target_ratio']
     else:
-        target_ratio = 4
+        target_ratio = CONFIG['summary']['large_transcript_target_ratio']
 
-    # Loop: Check length and request details if too short
-    # TODO: Maybe replace 'if' by 'while', but put a limit on the number of iterations
+    # Request details if summary too short
     if ratio_pct < target_ratio:
-        print(f"Summary is too short ({RED}{ratio_pct:.1f}%{RESET} ratio for {GREEN}{target_ratio}%{RESET} target), asking for more details")
+        # TODO: Maybe replace by while loop with max number of iterations
+        print(f"Summary is too short ({RED}{ratio_pct:.1f}%{RESET} ratio for "
+               "{GREEN}{target_ratio}%{RESET} target), asking for more details")
         start_time = time.time()
         
-        # Append a new user instruction
-        # IMPORTANT: We also append the previous 'assistant' message 
-        # (the current summary) so the model has context.
+        # Add the prompt to request a more detailed summary
         messages.append({
             "role": "user", 
-            #"content": "Your summary is too short. Could you tell me more about that in detail?"
-            "content": "Could you tell me more about that in detail?"
+            "content": CONFIG['summary']['expand_prompt']
         })
         
         # Get the new response
@@ -456,8 +454,11 @@ def summarize(transcript, model, prompt):
         color = RED if ratio_pct < target_ratio else GREEN
         print(f"New summary has a {color}{ratio_pct:.1f}%{RESET} ratio")
         
-        # Append this new response to history for the next iteration
-        messages.append({"role": "assistant", "content": summary})
+        # Add the response to conversation history for the next iteration
+        messages.append({
+            "role": "assistant",
+            "content": summary
+        })
 
     return summary
 
