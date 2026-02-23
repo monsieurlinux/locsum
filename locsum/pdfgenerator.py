@@ -8,8 +8,8 @@ import markdown_it
 from weasyprint import HTML
 
 # Local imports
-from logger import logger
-from utils import get_file_stem, read_file, write_file
+from .logger import logger
+from .utils import get_file_stem, read_file, write_file
 
 
 def write_pdf(pdf_file, md_content, css_file):
@@ -20,7 +20,8 @@ def write_pdf(pdf_file, md_content, css_file):
     header = get_file_stem(pdf_file) + ' / ' + date
 
     # CSS styling
-    # TODO: Automatically get 'locsum' to avoid hardcoding
+    # TODO: PROJECT_ROOT is a temp patch
+    # Automatically get 'locsum' to avoid hardcoding
     PROJECT_ROOT = Path(__file__).resolve().parent.parent
     css = read_file(PROJECT_ROOT / 'locsum' / css_file)
     

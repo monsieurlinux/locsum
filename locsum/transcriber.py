@@ -10,9 +10,9 @@ except ImportError:
     pass
 
 # Local imports
-from colors import YELLOW, RED, RESET
-from logger import logger
-from utils import format_time, normalize_path
+from .colors import YELLOW, RED, RESET
+from .logger import logger
+from .utils import format_time, normalize_path
 
 
 def transcribe_whisper_std(filename, model_name, language, config):

@@ -5,9 +5,9 @@ import time
 import ollama
 
 # Local imports
-from colors import GREEN, YELLOW, RED, RESET
-from logger import logger
-from utils import format_time
+from .colors import GREEN, YELLOW, RED, RESET
+from .logger import logger
+from .utils import format_time
 
 
 def summarize(transcript, model, config):

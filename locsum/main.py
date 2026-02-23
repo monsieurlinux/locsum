@@ -23,21 +23,16 @@ try:
 except ImportError:
     HAS_WHISPER_STD = False
 
-# Add project root to sys.path so script can be called directly w/o 'python3 -m'
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
-
 # Local imports
 from locsum import __version__
-import config
-import pdfgenerator
-import utils
-import summarizer
-import transcriber
-from colors import BLUE, WHITE, GREEN, YELLOW, RED, RESET
-from logger import logger
-from utils import format_time, read_file, write_file
+from . import config
+from . import pdfgenerator
+from . import utils
+from . import summarizer
+from . import transcriber
+from .colors import BLUE, WHITE, GREEN, YELLOW, RED, RESET
+from .logger import logger
+from .utils import format_time, read_file, write_file
 
 CONFIG = {}
 

@@ -6,7 +6,7 @@ import tomllib
 from pathlib import Path
 
 # Local imports
-from logger import logger
+from .logger import logger
 
 CONFIG = {}
 
@@ -14,7 +14,8 @@ CONFIG = {}
 def load_config(reset_config = False):
     global CONFIG
 
-    # TODO: cleanup variables, automatically get app_name to avoid hardcoding
+    # TODO: PROJECT_ROOT is a temp patch
+    # Automatically get 'locsum' to avoid hardcoding
     PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
     app_name = 'locsum'
