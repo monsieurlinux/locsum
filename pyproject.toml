@@ -28,7 +28,7 @@ dependencies = [
 Repository = "https://github.com/monsieurlinux/locsum"
 
 [project.scripts]
-locsum = "locsum.main:main"
+locsum = "locsum:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["locsum"]
