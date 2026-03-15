@@ -11,7 +11,7 @@ Terminal tool for batch offline transcription and summarization of audio/video f
 
 Transcription can run on a CPU without a GPU, but high-quality summarization requires significant GPU resources. I initially used an [NVIDIA Jetson Orin Nano Super Developer Kit][jetson-link]. While capable, its 8GB unified memory limited me to ~8B parameter models, which produced subpar summaries.
 
-I recently upgraded to an [ASUS Ascent GX10][gx10-link], a lower-cost alternative to the [NVIDIA DGX Spark][spark-link]. With 128GB of unified memory, I can now run much larger models. I am currently running a 30B parameter model (quantized) with excellent results. Theoretically, the hardware supports models up to 200B parameters.
+I recently upgraded to an [ASUS Ascent GX10][gx10-link], a lower-cost alternative to the [NVIDIA DGX Spark][spark-link]. With 128GB of unified memory, I can now run much larger models. I am currently using a quantized 30B parameter model for summarization, with excellent results. Theoretically, the hardware supports models up to 200B parameters (via quantization).
 
 ## Dependencies
 
@@ -182,6 +182,7 @@ locsum [arguments] FILE [FILE ...]
 | ------------------- | ---------- | ----------------------------------------------- |
 | `--help`            | `-h`       | Show help message                               |
 | `--check-cuda`      | `-c`       | Check if CUDA is available                      |
+| `--debug`           | `-d`       | Enable debug logging                            |
 | `--language`        | `-l`       | Set the language of the audio                   |
 | `--no-colors`       | `-n`       | Disable color output                            |
 | `--no-compact`      | `-N`       | Disable PDF compaction                          |
