@@ -31,7 +31,7 @@ from . import utils
 from . import summarizer
 from . import transcriber
 from .colors import BLUE, WHITE, GREEN, YELLOW, RED, RESET
-from .logger import logger
+from .logger import logger, config_logging
 from .utils import format_time, read_file, write_file
 
 CONFIG = {}
@@ -47,6 +47,8 @@ def main():
     if HAS_WHISPER_STD:
         parser.add_argument('-c', '--check-cuda', action='store_true',
                             help='check if CUDA is available')
+    parser.add_argument('-d', '--debug', action='store_true',
+                        help="enable debug logging")
     parser.add_argument('-l', '--language', metavar='LANG',
                         help='set the language of the audio')
     parser.add_argument('-n', '--no-colors', action='store_true',
@@ -74,6 +76,11 @@ def main():
         parser.add_argument('-W', '--filter-warnings', action='store_true',
                             help='suppress warnings from PyTorch')
     args = parser.parse_args()
+
+    if args.debug:
+        config_logging(logging.DEBUG)
+    else:
+        config_logging(logging.WARNING)
 
     if args.no_colors:
         global BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET
@@ -108,7 +115,7 @@ def main():
         # Or suppress all warnings from torch
         #warnings.filterwarnings("ignore", module="torch")
 
-    if whisper_engine == 'std' and args.check_cuda:
+    if HAS_WHISPER_STD and args.check_cuda:
         # Check if CUDA is available
         print(f'PyTorch {torch.__version__}')
         if torch.cuda.is_available():
@@ -276,18 +283,6 @@ def transcribe(audio_path: str, engine: str, whisper_model: str, language: str):
 
 
 if __name__ == '__main__':
-    #setup_logging()  # Try this logger.py function if messages not displayed
-
-    # Configure the root logger
-    logging.basicConfig(level=logging.WARNING,
-                        format='%(asctime)s - %(levelname)s - %(message)s',
-                        datefmt='%H:%M:%S')
-
-    # Set level for all existing loggers (notably from ttFont module)
-    for name in logging.Logger.manager.loggerDict:
-        logging.getLogger(name).setLevel(logging.WARNING)
-
-    # Configure this script's logger
-    logger.setLevel(logging.DEBUG)
-
+    # This code only runs when the file is executed directly as a script (i.e.
+    # `python3 -m locsum`), not when it is imported as a module (i.e. `locsum`)
     main()

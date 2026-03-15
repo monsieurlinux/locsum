@@ -5,7 +5,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(level=logging.DEBUG):
+def config_logging(level=logging.DEBUG):
+    # Configure the root logger
+    logging.basicConfig(level=logging.WARNING,
+                        format='%(asctime)s [%(levelname)s] %(message)s',
+                        datefmt='%H:%M:%S',
+                        #handlers=[logging.StreamHandler(sys.stdout)],
+                        force=True)
+
+    # Set level for all existing loggers (notably from ttFont module)
+    for name in logging.Logger.manager.loggerDict:
+        logging.getLogger(name).setLevel(logging.WARNING)
+
+    # Configure this module's logger
+    logger.setLevel(level)
+
+
+def setup_logging_old_test(level=logging.DEBUG):
     """Configure logging for this module"""
     # print() is for user consumption, logging is for developer consumption
     #logger.handlers.clear()  # Remove any existing handlers from your logger
