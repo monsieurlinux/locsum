@@ -2,6 +2,7 @@ __pycache__/
 archive/
 dist/
 test/
+venv/
 *.m4a
 *.md
 *.pdf
